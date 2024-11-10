@@ -161,6 +161,17 @@ type CryptomusPaymentRequest struct {
 	ToCurrency      string `json:"to_currency"`
 }
 
+type CryptomusRequestData struct {
+	State  int                 `json:"state"`
+	Result CryptomusResultData `json:"result"`
+}
+
+type CryptomusResultData struct {
+	Transid string  `json:"order_id"`
+	Amount  float32 `json:"amount"`
+	Url     string  `json:"url"`
+}
+
 func payment(w http.ResponseWriter, r *http.Request) {
 	var err error
 	err = r.ParseForm()
@@ -298,9 +309,12 @@ func payment(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Cryptomus error", http.StatusBadRequest)
 			return
 		}
-		fmt.Println(return_url)
-		fmt.Print(resp.Status)
-		fmt.Println(string(body))
+		var respdata CryptomusRequestData
+		if err := json.Unmarshal(body, &respdata); err != nil {
+			http.Error(w, "Cryptomus error", http.StatusBadRequest)
+			return
+		}
+		http.Redirect(w, r, respdata.Result.Url, http.StatusSeeOther)
 	}
 }
 
