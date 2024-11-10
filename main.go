@@ -137,11 +137,11 @@ type WataWebhookRequestData struct {
 }
 
 func payment(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(r.Form)
-	for key, values := range r.Form { // range over map
-		for _, value := range values { // range over []string
-			fmt.Println(key, value)
-		}
+	err := r.ParseForm()
+	if err != nil {
+		fmt.Println("Error parsing form:", err)
+	} else {
+		fmt.Println(r.Form)
 	}
 	//var err error
 	//invid := r.FormValue("invoice_id")
