@@ -281,7 +281,6 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		req.Header.Add("merchant", os.Getenv("cryptomus_merchant"))
 		req.Header.Add("sign", sign)
 		req.Header.Add("Content-Type", "application/json")
-		fmt.Println(string(data), sign)
 		resp, err := client.Do(req)
 		if err != nil {
 			http.Error(w, "Cryptomus error", http.StatusBadRequest)
@@ -293,6 +292,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Cryptomus error", http.StatusBadRequest)
 			return
 		}
+		fmt.Print(resp.Status)
 		fmt.Println(string(body))
 	}
 }
