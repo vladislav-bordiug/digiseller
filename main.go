@@ -252,7 +252,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 				MerchantOrderID: strconv.Itoa(int(invoice_id)),
 				Network:         network,
 				SuccessURL:      return_url,
-				CallbackURL:     os.Getenv("URL" + "cryptomus/"),
+				CallbackURL:     os.Getenv("URL") + "cryptomus/",
 				ToCurrency:      to_currency,
 			}
 		} else {
@@ -261,7 +261,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 				Currency:        currency,
 				MerchantOrderID: strconv.Itoa(int(invoice_id)),
 				SuccessURL:      return_url,
-				CallbackURL:     os.Getenv("URL" + "cryptomus/"),
+				CallbackURL:     os.Getenv("URL") + "cryptomus/",
 			}
 		}
 		data, err := json.Marshal(paymentData)
@@ -270,7 +270,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		}
 		req, err := http.NewRequest("POST", urlcrypto, bytes.NewBuffer(data))
 		if err != nil {
-			http.Error(w, "Wata error", http.StatusBadRequest)
+			http.Error(w, "Cryptomus error", http.StatusBadRequest)
 			return
 		}
 		base64Data := base64.StdEncoding.EncodeToString([]byte(data))
@@ -283,13 +283,13 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		req.Header.Add("Content-Type", "application/json")
 		resp, err := client.Do(req)
 		if err != nil {
-			http.Error(w, "Wata error", http.StatusBadRequest)
+			http.Error(w, "Cryptomus error", http.StatusBadRequest)
 			return
 		}
 		defer resp.Body.Close()
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			http.Error(w, "Wata error", http.StatusBadRequest)
+			http.Error(w, "Cryptomus error", http.StatusBadRequest)
 			return
 		}
 		fmt.Println(string(body))
