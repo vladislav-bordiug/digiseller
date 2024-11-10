@@ -173,7 +173,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Wata error", http.StatusBadRequest)
 			return
 		}
-		req.Header.Add("Authorization", os.Getenv("wata_sbp_token"))
+		req.Header.Add("Authorization", "Bearer "+os.Getenv("wata_sbp_token"))
 		resp, err := client.Do(req)
 		if err != nil {
 			fmt.Println(err)
