@@ -139,6 +139,7 @@ type WataWebhookRequestData struct {
 func payment(w http.ResponseWriter, r *http.Request) {
 	var err error
 	err = r.ParseForm()
+	fmt.Println(r.Form)
 	if err != nil {
 		fmt.Println("Error parsing form:", err)
 		http.Error(w, "Incorrect data", http.StatusBadRequest)
