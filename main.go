@@ -242,6 +242,10 @@ func payment(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Wata error", http.StatusBadRequest)
 			return
 		}
+		if len(respdata.Url) == 0 {
+			http.Error(w, "Wata error", http.StatusBadRequest)
+			return
+		}
 		http.Redirect(w, r, respdata.Url, http.StatusSeeOther)
 	} else {
 		to_currency := ""
