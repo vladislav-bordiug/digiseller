@@ -200,28 +200,18 @@ func payment(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Wata error", http.StatusBadRequest)
 			return
 		}
-		fmt.Println("Response Status:", resp.Status)
 		defer resp.Body.Close()
 
+		var respdata WataRequestData
 		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatal("Error reading response body:", err)
+		fmt.Println(string(body))
+		if err := json.Unmarshal(body, &respdata); err != nil {
+			fmt.Println(err)
+			http.Error(w, "Wata error", http.StatusBadRequest)
+			return
 		}
-
-		// Выводим байты ответа в виде строки
-		fmt.Println("Response Body (as string):", string(body))
-
-		// Для быстрого понимания типа, можно вывести как срез байт
-		fmt.Println("Response Body (as bytes):", body)
-
-		//var respdata WataRequestData
-		//body, err := io.ReadAll(resp.Body)
-		//fmt.Println(string(body))
-		//if err := json.Unmarshal(body, &respdata); err != nil {
-		//	fmt.Println("Wata error")
-		//}
-		//fmt.Println(respdata)
-		//http.Redirect(w, r, respdata.Url, http.StatusSeeOther)
+		fmt.Println(respdata)
+		http.Redirect(w, r, respdata.Url, http.StatusSeeOther)
 	}
 }
 
