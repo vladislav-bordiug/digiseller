@@ -137,6 +137,14 @@ type WataWebhookRequestData struct {
 	Hash    string `json:"hash"`
 }
 
+type WataPaymentRequest struct {
+	Amount          float32 `json:"amount"`
+	Description     string  `json:"description"`
+	SuccessURL      string  `json:"success_url"`
+	FailURL         string  `json:"fail_url"`
+	MerchantOrderID string  `json:"merchant_order_id"`
+}
+
 func payment(w http.ResponseWriter, r *http.Request) {
 	var err error
 	err = r.ParseForm()
@@ -166,7 +174,17 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		client := &http.Client{}
 		url := "https://acquiring.foreignpay.ru/webhook/partner_sbp/transaction"
 		amount /= 1 - commissions["20122"]
-		data := []byte(fmt.Sprintf(`{"amount": %.2f, "description": %s, "success_url": %s, "fail_url": %s, "merchant_order_id": %s }`, amount, description, return_url, return_url, invoice_id))
+		paymentData := WataPaymentRequest{
+			Amount:          float32(amount),
+			Description:     description,
+			SuccessURL:      return_url,
+			FailURL:         return_url,
+			MerchantOrderID: strconv.Itoa(int(invoice_id)),
+		}
+		data, err := json.Marshal(paymentData)
+		if err != nil {
+			log.Fatal("Error marshaling JSON:", err)
+		}
 		req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
 		if err != nil {
 			fmt.Println(err)
@@ -174,6 +192,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		req.Header.Add("Authorization", "Bearer "+os.Getenv("wata_sbp_token"))
+		req.Header.Add("Content-Type", "application/json")
 		resp, err := client.Do(req)
 		if err != nil {
 			fmt.Println(err)
