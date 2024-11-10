@@ -180,6 +180,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 	}
 	payment_id := r.Form["payment_id"][0]
 	return_url := r.Form["return_url"][0]
+	fmt.Println(return_url)
 	description := r.Form["description"][0]
 	currency := r.Form["currency"][0]
 	InsertQuery(connPool, invoice_id, float32(amount), currency, "wait")
