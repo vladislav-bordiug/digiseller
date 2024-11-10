@@ -137,60 +137,58 @@ type WataWebhookRequestData struct {
 }
 
 func payment(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
+	var err error
+	err = r.ParseForm()
 	if err != nil {
 		fmt.Println("Error parsing form:", err)
-	} else {
-		fmt.Println(r.Form)
+		http.Error(w, "Incorrect data", http.StatusBadRequest)
+		return
 	}
-	//var err error
-	//invid := r.FormValue("invoice_id")
-	//invoice_id, err := strconv.ParseInt(invid, 10, 64)
-	//if err != nil {
-	//	fmt.Println(err)
-	//	http.Error(w, "Incorrect id", http.StatusBadRequest)
-	//	return
-	//}
-	//amt := r.FormValue("amount")
-	//amount, err := strconv.ParseFloat(amt, 32)
-	//if err != nil {
-	//	fmt.Println(err)
-	//	http.Error(w, "Incorrect amount", http.StatusBadRequest)
-	//	return
-	//}
-	//payment_id := r.FormValue("payment_id")
-	//return_url := r.FormValue("return_url")
-	//description := r.FormValue("description")
-	//currency := r.FormValue("currency")
-	//InsertQuery(connPool, invoice_id, float32(amount), currency, "wait")
-	//if payment_id == "20122" {
-	//	client := &http.Client{}
-	//	url := "https://acquiring.foreignpay.ru/webhook/partner_sbp/transaction"
-	//	amount /= 1 - commissions["20122"]
-	//	data := []byte(fmt.Sprintf(`{"amount": %.2f, "description": %s, "success_url": %s, "fail_url": %s, "merchant_order_id": %s }`, amount, description, return_url, return_url, invoice_id))
-	//	req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
-	//	if err != nil {
-	//		fmt.Println(err)
-	//		http.Error(w, "Wata error", http.StatusBadRequest)
-	//		return
-	//	}
-	//	req.Header.Add("Authorization", os.Getenv("wata_sbp_token"))
-	//	resp, err := client.Do(req)
-	//	if err != nil {
-	//		fmt.Println(err)
-	//		http.Error(w, "Wata error", http.StatusBadRequest)
-	//		return
-	//	}
-	//	defer resp.Body.Close()
-	//	var respdata WataRequestData
-	//	err = json.NewDecoder(resp.Body).Decode(&respdata)
-	//	if err != nil {
-	//		fmt.Println(err)
-	//		http.Error(w, "Wata error", http.StatusBadRequest)
-	//		return
-	//	}
-	//	http.Redirect(w, r, respdata.Url, http.StatusSeeOther)
-	//}
+	invoice_id, err := strconv.ParseInt(r.Form["invoice_id"][0], 10, 64)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Incorrect id", http.StatusBadRequest)
+		return
+	}
+	amount, err := strconv.ParseFloat(r.Form["amount"][0], 32)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Incorrect amount", http.StatusBadRequest)
+		return
+	}
+	payment_id := r.Form["payment_id"][0]
+	return_url := r.Form["return_url"][0]
+	description := r.Form["description"][0]
+	currency := r.Form["currency"][0]
+	InsertQuery(connPool, invoice_id, float32(amount), currency, "wait")
+	if payment_id == "20122" {
+		client := &http.Client{}
+		url := "https://acquiring.foreignpay.ru/webhook/partner_sbp/transaction"
+		amount /= 1 - commissions["20122"]
+		data := []byte(fmt.Sprintf(`{"amount": %.2f, "description": %s, "success_url": %s, "fail_url": %s, "merchant_order_id": %s }`, amount, description, return_url, return_url, invoice_id))
+		req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
+		if err != nil {
+			fmt.Println(err)
+			http.Error(w, "Wata error", http.StatusBadRequest)
+			return
+		}
+		req.Header.Add("Authorization", os.Getenv("wata_sbp_token"))
+		resp, err := client.Do(req)
+		if err != nil {
+			fmt.Println(err)
+			http.Error(w, "Wata error", http.StatusBadRequest)
+			return
+		}
+		defer resp.Body.Close()
+		var respdata WataRequestData
+		err = json.NewDecoder(resp.Body).Decode(&respdata)
+		if err != nil {
+			fmt.Println(err)
+			http.Error(w, "Wata error", http.StatusBadRequest)
+			return
+		}
+		http.Redirect(w, r, respdata.Url, http.StatusSeeOther)
+	}
 }
 
 func webhookwata(w http.ResponseWriter, r *http.Request) {
