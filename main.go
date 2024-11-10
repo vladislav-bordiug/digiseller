@@ -190,7 +190,10 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusOK)
 		http.Redirect(w, r, respdata.Url, http.StatusSeeOther)
+		return
 	}
+	w.WriteHeader(http.StatusOK)
+	return
 }
 
 func webhookwata(w http.ResponseWriter, r *http.Request) {
