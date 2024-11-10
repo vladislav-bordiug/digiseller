@@ -152,13 +152,13 @@ type WataPaymentRequest struct {
 }
 
 type CryptomusPaymentRequest struct {
-	Amount          float32 `json:"amount"`
-	Currency        string  `json:"currency"`
-	MerchantOrderID string  `json:"order_id"`
-	Network         string  `json:"network"`
-	SuccessURL      string  `json:"url_success"`
-	CallbackURL     string  `json:"url_callback"`
-	ToCurrency      string  `json:"to_currency"`
+	Amount          string `json:"amount"`
+	Currency        string `json:"currency"`
+	MerchantOrderID string `json:"order_id"`
+	Network         string `json:"network"`
+	SuccessURL      string `json:"url_success"`
+	CallbackURL     string `json:"url_callback"`
+	ToCurrency      string `json:"to_currency"`
 }
 
 func payment(w http.ResponseWriter, r *http.Request) {
@@ -247,7 +247,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		var paymentData CryptomusPaymentRequest
 		if len(to_currency) != 0 && len(network) != 0 {
 			paymentData = CryptomusPaymentRequest{
-				Amount:          float32(amount),
+				Amount:          amount,
 				Currency:        currency,
 				MerchantOrderID: strconv.Itoa(int(invoice_id)),
 				Network:         network,
@@ -257,7 +257,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 			}
 		} else {
 			paymentData = CryptomusPaymentRequest{
-				Amount:          float32(amount),
+				Amount:          amount,
 				Currency:        currency,
 				MerchantOrderID: strconv.Itoa(int(invoice_id)),
 				SuccessURL:      return_url,
