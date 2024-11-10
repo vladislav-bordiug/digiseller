@@ -125,6 +125,7 @@ func main() {
 	defer connPool.Close()
 	http.HandleFunc("/payment/", payment)
 	http.HandleFunc("/webhookwata/", webhookwata)
+	http.HandleFunc("/webhookcryptomus/", webhookcryptomus)
 	log.Fatal(http.ListenAndServe("0.0.0.0"+":"+os.Getenv("PORT"), nil))
 }
 
@@ -175,6 +176,33 @@ type CryptomusResultData struct {
 type CryptomusError struct {
 	State   int    `json:"state"`
 	Message string `json:"message"`
+}
+
+type CryptomusWebhookRequestData struct {
+	Type              string  `json:"type"`
+	Uuid              string  `json:"uuid"`
+	OrderID           string  `json:"order_id"`
+	Amount            string  `json:"amount"`
+	PaymentAmount     string  `json:"payment_amount"`
+	PaymentAmountUSD  string  `json:"payment_amount_usd"`
+	MerchantAmount    string  `json:"merchant_amount"`
+	Commission        string  `json:"commission"`
+	IsFinal           bool    `json:"is_final"`
+	Status            string  `json:"status"`
+	From              string  `json:"from"`
+	WalletAddressUUID *string `json:"wallet_address_uuid"`
+	Network           string  `json:"network"`
+	Currency          string  `json:"currency"`
+	PayerCurrency     string  `json:"payer_currency"`
+	AdditionalData    *string `json:"additional_data"`
+	Convert           *struct {
+		ToCurrency string  `json:"to_currency"`
+		Commission *string `json:"commission"`
+		Rate       string  `json:"rate"`
+		Amount     string  `json:"amount"`
+	} `json:"convert"`
+	Txid      string `json:"txid"`
+	Signature string `json:"sign"`
 }
 
 func payment(w http.ResponseWriter, r *http.Request) {
@@ -278,7 +306,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 				MerchantOrderID: strconv.Itoa(int(invoice_id)),
 				Network:         network,
 				SuccessURL:      return_url,
-				CallbackURL:     os.Getenv("URL") + "cryptomus/",
+				CallbackURL:     os.Getenv("URL") + "webhookcryptomus/",
 				ToCurrency:      to_currency,
 			}
 		} else {
@@ -287,7 +315,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 				Currency:        currency,
 				MerchantOrderID: strconv.Itoa(int(invoice_id)),
 				SuccessURL:      return_url,
-				CallbackURL:     os.Getenv("URL") + "cryptomus/",
+				CallbackURL:     os.Getenv("URL") + "webhookcryptomus/",
 			}
 		}
 		data, err := json.Marshal(paymentData)
@@ -389,6 +417,104 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 	mac = hmac.New(sha256.New, []byte(os.Getenv("HASH_KEY")))
 	mac.Write(hash)
 	signature = mac.Sum(nil)
+	apiUrl := "https://digiseller.market"
+	resource := "/callback/api"
+	data := url.Values{}
+	data.Set("invoice_id", strconv.FormatInt(invoice_id, 10))
+	data.Set("amount", fmt.Sprintf("%f", amount))
+	data.Set("currency", currency)
+	data.Set("status", status)
+	data.Set("signature", string(signature))
+	u, err := url.ParseRequestURI(apiUrl)
+	if err != nil {
+		http.Error(w, "Incorrect url", http.StatusBadRequest)
+		return
+	}
+	u.Path = resource
+	urlStr := u.String()
+	req, err := http.NewRequest("GET", urlStr, strings.NewReader(data.Encode()))
+	if err != nil {
+		http.Error(w, "Digiseller error", http.StatusBadRequest)
+		return
+	}
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := client.Do(req)
+	if err != nil {
+		http.Error(w, "Digiseller error", http.StatusBadRequest)
+		return
+	}
+	defer resp.Body.Close()
+}
+
+func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
+	var respdata CryptomusWebhookRequestData
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
+		return
+	}
+	if err := json.Unmarshal(body, &respdata); err != nil {
+		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
+		return
+	}
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		http.Error(w, "Unable to parse RemoteAddr", http.StatusBadRequest)
+		return
+	}
+	if ip != "91.227.144.54" {
+		http.Error(w, "Incorrect IP", http.StatusBadRequest)
+		return
+	}
+
+	dataBytes, err := json.Marshal(respdata)
+	if err != nil {
+		log.Fatal("Error marshaling JSON:", err)
+	}
+	dataMap := make(map[string]interface{})
+	err = json.Unmarshal(dataBytes, &dataMap)
+	if err != nil {
+		log.Fatal(err)
+	}
+	delete(dataMap, "sign")
+	json_last, err := json.Marshal(dataMap)
+	if err != nil {
+		log.Fatal("Error marshaling JSON:", err)
+	}
+	base64Data := base64.StdEncoding.EncodeToString(json_last)
+	concatData := base64Data + os.Getenv("cryptomus_api")
+	hasher := md5.New()
+	hasher.Write([]byte(concatData))
+	sign := hex.EncodeToString(hasher.Sum(nil))
+	if sign != respdata.Signature {
+		fmt.Println("Invalid hash, signatures do not match!")
+		return
+	}
+	client := &http.Client{}
+	status := ""
+	if respdata.Status == "paid" || respdata.Status == "paid_over" {
+		status = "paid"
+	} else if respdata.Status == "refund_process" || respdata.Status == "locked" || respdata.Status == "check" || respdata.Status == "wrong_amount" || respdata.Status == "process" || respdata.Status == "confirm_check" || respdata.Status == "wrong_amount_waiting" {
+		status = "wait"
+	} else if respdata.Status == "refund_fail" || respdata.Status == "fail" || respdata.Status == "cancel" || respdata.Status == "system_fail" {
+		status = "canceled"
+	} else if respdata.Status == "refund_paid" {
+		status = "refunded"
+	} else {
+		http.Error(w, "Incorrect status", http.StatusBadRequest)
+		return
+	}
+	invoice_id, err := strconv.ParseInt(respdata.OrderID, 10, 64)
+	if err != nil {
+		http.Error(w, "Incorrect id", http.StatusBadRequest)
+		return
+	}
+	UpdateStatusQuery(connPool, invoice_id, status)
+	amount, currency := SelectWebhookQuery(connPool, invoice_id)
+	hash := []byte(fmt.Sprintf("amount:%.2f;currency:%s;invoice_id:%d;status:%s;", amount, currency, invoice_id, status))
+	mac := hmac.New(sha256.New, []byte(os.Getenv("HASH_KEY")))
+	mac.Write(hash)
+	signature := mac.Sum(nil)
 	apiUrl := "https://digiseller.market"
 	resource := "/callback/api"
 	data := url.Values{}
