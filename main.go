@@ -188,12 +188,11 @@ func payment(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Wata error", http.StatusBadRequest)
 			return
 		}
+		fmt.Println(respdata.Url)
 		w.WriteHeader(http.StatusOK)
 		http.Redirect(w, r, respdata.Url, http.StatusSeeOther)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
-	return
 }
 
 func webhookwata(w http.ResponseWriter, r *http.Request) {
