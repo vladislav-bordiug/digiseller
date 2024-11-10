@@ -173,7 +173,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 	if payment_id == "20122" {
 		client := &http.Client{}
 		url := "https://acquiring.foreignpay.ru/webhook/partner_sbp/transaction"
-		amount /= 1 - commissions["20122"]
+		amount /= 1 - commissions["20122"]/100
 		paymentData := WataPaymentRequest{
 			Amount:          float32(amount),
 			Description:     description,
