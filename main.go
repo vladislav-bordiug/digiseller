@@ -327,7 +327,9 @@ func payment(w http.ResponseWriter, r *http.Request) {
 			}
 			http.Error(w, respdata.Message, http.StatusBadRequest)
 			time.Sleep(3 * time.Second)
-			http.Redirect(w, r, r.Header.Get("Referer"), 302)
+			referer := r.Referer()
+			fmt.Println(referer)
+			http.Redirect(w, r, referer, 302)
 			return
 		}
 		http.Redirect(w, r, respdata.Result.Url, http.StatusSeeOther)
