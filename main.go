@@ -138,12 +138,6 @@ type WataWebhookRequestData struct {
 
 func payment(w http.ResponseWriter, r *http.Request) {
 	var err error
-	fmt.Println(r.FormValue("invoice_id"))
-	err = r.ParseForm()
-	if err != nil {
-		http.Error(w, "Failed to parse form", http.StatusBadRequest)
-		return
-	}
 	invoice_id, err := strconv.ParseInt(r.FormValue("invoice_id"), 10, 64)
 	if err != nil {
 		fmt.Println(err)
@@ -152,6 +146,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 	}
 	amount, err := strconv.ParseFloat(r.FormValue("amount"), 32)
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "Incorrect amount", http.StatusBadRequest)
 		return
 	}
@@ -167,12 +162,14 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		data := []byte(fmt.Sprintf(`{"amount": %.2f, "description": %s, "success_url": %s, "fail_url": %s, "merchant_order_id": %s }`, amount, description, return_url, return_url, invoice_id))
 		req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
 		if err != nil {
+			fmt.Println(err)
 			http.Error(w, "Wata error", http.StatusBadRequest)
 			return
 		}
 		req.Header.Add("Authorization", os.Getenv("wata_sbp_token"))
 		resp, err := client.Do(req)
 		if err != nil {
+			fmt.Println(err)
 			http.Error(w, "Wata error", http.StatusBadRequest)
 			return
 		}
@@ -180,6 +177,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		var respdata WataRequestData
 		err = json.NewDecoder(resp.Body).Decode(&respdata)
 		if err != nil {
+			fmt.Println(err)
 			http.Error(w, "Wata error", http.StatusBadRequest)
 			return
 		}
