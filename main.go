@@ -174,7 +174,7 @@ type CryptomusResultData struct {
 
 type CryptomusError struct {
 	State   int    `json:"state"`
-	Message string `json:"amount"`
+	Message string `json:"message"`
 }
 
 func payment(w http.ResponseWriter, r *http.Request) {
@@ -325,7 +325,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "Cryptomus error", http.StatusBadRequest)
 				return
 			}
-			http.Error(w, respdata.Message+string(body), http.StatusBadRequest)
+			http.Error(w, respdata.Message, http.StatusBadRequest)
 			return
 		}
 		http.Redirect(w, r, respdata.Result.Url, http.StatusSeeOther)
