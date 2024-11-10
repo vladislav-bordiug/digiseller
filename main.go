@@ -188,6 +188,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Wata error", http.StatusBadRequest)
 			return
 		}
+		w.WriteHeader(http.StatusOK)
 		http.Redirect(w, r, respdata.Url, http.StatusSeeOther)
 	}
 }
