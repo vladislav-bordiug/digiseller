@@ -116,8 +116,8 @@ func main() {
 
 	CreateTableQuery(connPool)
 	defer connPool.Close()
-	http.HandleFunc("/payment", payment)
-	http.HandleFunc("/webhookwata", webhookwata)
+	http.HandleFunc("/payment/", payment)
+	http.HandleFunc("/webhookwata/", webhookwata)
 	log.Fatal(http.ListenAndServe("0.0.0.0"+":"+os.Getenv("PORT"), nil))
 }
 
