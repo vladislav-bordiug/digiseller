@@ -182,6 +182,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		}
 		defer resp.Body.Close()
 		var respdata WataRequestData
+		fmt.Println(resp.Body)
 		err = json.NewDecoder(resp.Body).Decode(&respdata)
 		if err != nil {
 			fmt.Println(err)
@@ -189,7 +190,6 @@ func payment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		fmt.Println(respdata.Url)
-		w.WriteHeader(http.StatusOK)
 		http.Redirect(w, r, respdata.Url, http.StatusSeeOther)
 		return
 	}
