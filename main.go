@@ -192,7 +192,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Wata error", http.StatusBadRequest)
 			return
 		}
-		req.Header.Add("Authorization", os.Getenv("wata_sbp_token"))
+		req.Header.Add("Authorization", "Bearer "+os.Getenv("wata_sbp_token"))
 		req.Header.Add("Content-Type", "application/json")
 		resp, err := client.Do(req)
 		if err != nil {
@@ -205,22 +205,14 @@ func payment(w http.ResponseWriter, r *http.Request) {
 
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal("Error reading response body:", err)
 		}
 
-		var result map[string]interface{}
-		err = json.Unmarshal(body, &result)
-		if err != nil {
-			log.Fatal(err)
-		}
+		// Выводим байты ответа в виде строки
+		fmt.Println("Response Body (as string):", string(body))
 
-		jsonData, err := json.Marshal(result)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		jsonString := string(jsonData)
-		fmt.Println(jsonString)
+		// Для быстрого понимания типа, можно вывести как срез байт
+		fmt.Println("Response Body (as bytes):", body)
 
 		//var respdata WataRequestData
 		//body, err := io.ReadAll(resp.Body)
