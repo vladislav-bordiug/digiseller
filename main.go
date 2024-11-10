@@ -182,8 +182,8 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		}
 		defer resp.Body.Close()
 		var respdata WataRequestData
-		fmt.Println(resp.Body)
 		err = json.NewDecoder(resp.Body).Decode(&respdata)
+		fmt.Println(respdata)
 		if err != nil {
 			fmt.Println(err)
 			http.Error(w, "Wata error", http.StatusBadRequest)
@@ -191,7 +191,6 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		}
 		fmt.Println(respdata.Url)
 		http.Redirect(w, r, respdata.Url, http.StatusSeeOther)
-		return
 	}
 }
 
