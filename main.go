@@ -273,7 +273,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Cryptomus error", http.StatusBadRequest)
 			return
 		}
-		base64Data := base64.StdEncoding.EncodeToString([]byte(data))
+		base64Data := base64.StdEncoding.EncodeToString(data)
 		concatData := base64Data + os.Getenv("cryptomus_api")
 		hasher := md5.New()
 		hasher.Write([]byte(concatData))
@@ -281,6 +281,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		req.Header.Add("merchant", os.Getenv("cryptomus_merchant"))
 		req.Header.Add("sign", sign)
 		req.Header.Add("Content-Type", "application/json")
+		fmt.Println(string(data), sign)
 		resp, err := client.Do(req)
 		if err != nil {
 			http.Error(w, "Cryptomus error", http.StatusBadRequest)
