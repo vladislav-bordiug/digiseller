@@ -315,7 +315,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if len(respdata.Result.Url) == 0 {
-			http.Error(w, "Cryptomus error", http.StatusBadRequest)
+			http.Error(w, string(body), http.StatusBadRequest)
 			return
 		}
 		http.Redirect(w, r, respdata.Result.Url, http.StatusSeeOther)
