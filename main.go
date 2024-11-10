@@ -113,6 +113,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Could not ping database")
 	}
+
 	CreateTableQuery(connPool)
 	defer connPool.Close()
 	http.HandleFunc("/payment", payment)
