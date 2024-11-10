@@ -320,7 +320,8 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		}
 		data, err := json.Marshal(paymentData)
 		if err != nil {
-			log.Fatal("Error marshaling JSON:", err)
+			http.Error(w, "Error marshaling JSON:", http.StatusBadRequest)
+			return
 		}
 		req, err := http.NewRequest("POST", urlcrypto, bytes.NewBuffer(data))
 		if err != nil {
@@ -466,7 +467,6 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect IP", http.StatusBadRequest)
 		return
 	}
-
 	dataBytes, err := json.Marshal(respdata)
 	if err != nil {
 		log.Fatal("Error marshaling JSON:", err)
@@ -474,12 +474,14 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	dataMap := make(map[string]interface{})
 	err = json.Unmarshal(dataBytes, &dataMap)
 	if err != nil {
-		log.Fatal(err)
+		http.Error(w, "Error unmarshaling JSON:", http.StatusBadRequest)
+		return
 	}
 	delete(dataMap, "sign")
 	json_last, err := json.Marshal(dataMap)
 	if err != nil {
-		log.Fatal("Error marshaling JSON:", err)
+		http.Error(w, "Error marshaling JSON:", http.StatusBadRequest)
+		return
 	}
 	base64Data := base64.StdEncoding.EncodeToString(json_last)
 	concatData := base64Data + os.Getenv("cryptomus_api")
@@ -487,7 +489,7 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	hasher.Write([]byte(concatData))
 	sign := hex.EncodeToString(hasher.Sum(nil))
 	if sign != respdata.Signature {
-		fmt.Println("Invalid hash, signatures do not match!")
+		http.Error(w, "Invalid hash, signatures do not match!", http.StatusBadRequest)
 		return
 	}
 	client := &http.Client{}
