@@ -247,7 +247,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		var paymentData CryptomusPaymentRequest
 		if len(to_currency) != 0 && len(network) != 0 {
 			paymentData = CryptomusPaymentRequest{
-				Amount:          amount,
+				Amount:          fmt.Sprintf("%f", amount),
 				Currency:        currency,
 				MerchantOrderID: strconv.Itoa(int(invoice_id)),
 				Network:         network,
@@ -257,7 +257,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 			}
 		} else {
 			paymentData = CryptomusPaymentRequest{
-				Amount:          amount,
+				Amount:          fmt.Sprintf("%f", amount),
 				Currency:        currency,
 				MerchantOrderID: strconv.Itoa(int(invoice_id)),
 				SuccessURL:      return_url,
