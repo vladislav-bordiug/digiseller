@@ -172,6 +172,11 @@ type CryptomusResultData struct {
 	Url     string `json:"url"`
 }
 
+type CryptomusError struct {
+	State   int    `json:"state"`
+	Message string `json:"amount"`
+}
+
 func payment(w http.ResponseWriter, r *http.Request) {
 	var err error
 	err = r.ParseForm()
@@ -315,7 +320,12 @@ func payment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if len(respdata.Result.Url) == 0 {
-			http.Error(w, string(body), http.StatusBadRequest)
+			var respdata CryptomusError
+			if err := json.Unmarshal(body, &respdata); err != nil {
+				http.Error(w, "Cryptomus error", http.StatusBadRequest)
+				return
+			}
+			http.Error(w, respdata.Message, http.StatusBadRequest)
 			return
 		}
 		http.Redirect(w, r, respdata.Result.Url, http.StatusSeeOther)
