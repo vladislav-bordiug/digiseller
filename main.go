@@ -201,7 +201,10 @@ type CryptomusWebhookRequestData struct {
 		Rate       string  `json:"rate"`
 		Amount     string  `json:"amount"`
 	} `json:"convert"`
-	Txid      string `json:"txid"`
+	Txid string `json:"txid"`
+}
+
+type CryptomusSignWebhookRequestData struct {
 	Signature string `json:"sign"`
 }
 
@@ -467,28 +470,25 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect IP", http.StatusBadRequest)
 		return
 	}
-	dataBytes, err := json.Marshal(respdata)
-	if err != nil {
-		log.Fatal("Error marshaling JSON:", err)
-	}
-	dataMap := make(map[string]interface{})
-	err = json.Unmarshal(dataBytes, &dataMap)
-	if err != nil {
-		http.Error(w, "Error unmarshaling JSON:", http.StatusBadRequest)
+
+	var received_sign CryptomusSignWebhookRequestData
+	if err := json.Unmarshal(body, &received_sign); err != nil {
+		http.Error(w, "Cryptomus error", http.StatusBadRequest)
 		return
 	}
-	delete(dataMap, "sign")
-	json_last, err := json.Marshal(dataMap)
+
+	json_data, err := json.Marshal(respdata)
 	if err != nil {
 		http.Error(w, "Error marshaling JSON:", http.StatusBadRequest)
 		return
 	}
-	base64Data := base64.StdEncoding.EncodeToString(json_last)
+
+	base64Data := base64.StdEncoding.EncodeToString(json_data)
 	concatData := base64Data + os.Getenv("cryptomus_api")
 	hasher := md5.New()
 	hasher.Write([]byte(concatData))
 	sign := hex.EncodeToString(hasher.Sum(nil))
-	if sign != respdata.Signature {
+	if sign != received_sign.Signature {
 		http.Error(w, "Invalid hash, signatures do not match!", http.StatusBadRequest)
 		return
 	}
