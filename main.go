@@ -310,8 +310,10 @@ func payment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		var respdata CryptomusRequestData
+		fmt.Println(string(body))
 		if err := json.Unmarshal(body, &respdata); err != nil {
 			http.Error(w, "Cryptomus error", http.StatusBadRequest)
+			fmt.Println(err)
 			return
 		}
 		http.Redirect(w, r, respdata.Result.Url, http.StatusSeeOther)
