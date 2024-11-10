@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -139,7 +140,6 @@ type WataWebhookRequestData struct {
 func payment(w http.ResponseWriter, r *http.Request) {
 	var err error
 	err = r.ParseForm()
-	fmt.Println(r.Form)
 	if err != nil {
 		fmt.Println("Error parsing form:", err)
 		http.Error(w, "Incorrect data", http.StatusBadRequest)
@@ -182,14 +182,12 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		}
 		defer resp.Body.Close()
 		var respdata WataRequestData
-		err = json.NewDecoder(resp.Body).Decode(&respdata)
-		fmt.Println(respdata)
-		if err != nil {
-			fmt.Println(err)
-			http.Error(w, "Wata error", http.StatusBadRequest)
-			return
+		body, err := io.ReadAll(resp.Body)
+		fmt.Println(string(body))
+		if err := json.Unmarshal(body, &respdata); err != nil {
+			fmt.Println("Wata error")
 		}
-		fmt.Println(respdata.Url)
+		fmt.Println(respdata)
 		http.Redirect(w, r, respdata.Url, http.StatusSeeOther)
 	}
 }
