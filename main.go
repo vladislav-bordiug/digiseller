@@ -149,19 +149,16 @@ func payment(w http.ResponseWriter, r *http.Request) {
 	var err error
 	err = r.ParseForm()
 	if err != nil {
-		fmt.Println("Error parsing form:", err)
 		http.Error(w, "Incorrect data", http.StatusBadRequest)
 		return
 	}
 	invoice_id, err := strconv.ParseInt(r.Form["invoice_id"][0], 10, 64)
 	if err != nil {
-		fmt.Println(err)
 		http.Error(w, "Incorrect id", http.StatusBadRequest)
 		return
 	}
 	amount, err := strconv.ParseFloat(r.Form["amount"][0], 32)
 	if err != nil {
-		fmt.Println(err)
 		http.Error(w, "Incorrect amount", http.StatusBadRequest)
 		return
 	}
@@ -185,10 +182,9 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Fatal("Error marshaling JSON:", err)
 		}
-		fmt.Println("Request JSON:", string(data))
+
 		req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
 		if err != nil {
-			fmt.Println(err)
 			http.Error(w, "Wata error", http.StatusBadRequest)
 			return
 		}
@@ -196,7 +192,6 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		req.Header.Add("Content-Type", "application/json")
 		resp, err := client.Do(req)
 		if err != nil {
-			fmt.Println(err)
 			http.Error(w, "Wata error", http.StatusBadRequest)
 			return
 		}
@@ -204,13 +199,10 @@ func payment(w http.ResponseWriter, r *http.Request) {
 
 		var respdata WataRequestData
 		body, err := io.ReadAll(resp.Body)
-		fmt.Println(string(body))
 		if err := json.Unmarshal(body, &respdata); err != nil {
-			fmt.Println(err)
 			http.Error(w, "Wata error", http.StatusBadRequest)
 			return
 		}
-		fmt.Println(respdata)
 		http.Redirect(w, r, respdata.Url, http.StatusSeeOther)
 	}
 }
