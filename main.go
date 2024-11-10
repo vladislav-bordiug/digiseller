@@ -139,7 +139,6 @@ type WataWebhookRequestData struct {
 func payment(w http.ResponseWriter, r *http.Request) {
 	var err error
 	invid := r.FormValue("invoice_id")
-	fmt.Println(invid)
 	invoice_id, err := strconv.ParseInt(invid, 10, 64)
 	if err != nil {
 		fmt.Println(err)
@@ -158,6 +157,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 	description := r.FormValue("description")
 	currency := r.FormValue("currency")
 	InsertQuery(connPool, invoice_id, float32(amount), currency, "wait")
+	fmt.Println(payment_id)
 	if payment_id == "20122" {
 		client := &http.Client{}
 		url := "https://acquiring.foreignpay.ru/webhook/partner_sbp/transaction"
