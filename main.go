@@ -139,6 +139,11 @@ type WataWebhookRequestData struct {
 func payment(w http.ResponseWriter, r *http.Request) {
 	var err error
 	fmt.Println(r.FormValue("invoice_id"))
+	err = r.ParseForm()
+	if err != nil {
+		http.Error(w, "Failed to parse form", http.StatusBadRequest)
+		return
+	}
 	invoice_id, err := strconv.ParseInt(r.FormValue("invoice_id"), 10, 64)
 	if err != nil {
 		fmt.Println(err)
