@@ -141,6 +141,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(r.FormValue("invoice_id"))
 	invoice_id, err := strconv.ParseInt(r.FormValue("invoice_id"), 10, 64)
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "Incorrect id", http.StatusBadRequest)
 		return
 	}
