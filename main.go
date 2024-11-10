@@ -4,16 +4,22 @@ import (
 	"bytes"
 	"context"
 	"crypto/hmac"
+	"crypto/md5"
 	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"io"
 	"log"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -145,6 +151,16 @@ type WataPaymentRequest struct {
 	MerchantOrderID string  `json:"merchant_order_id"`
 }
 
+type CryptomusPaymentRequest struct {
+	Amount          float32 `json:"amount"`
+	Currency        string  `json:"currency"`
+	MerchantOrderID string  `json:"order_id"`
+	Network         string  `json:"network"`
+	SuccessURL      string  `json:"url_success"`
+	CallbackURL     string  `json:"url_callback"`
+	ToCurrency      string  `json:"to_currency"`
+}
+
 func payment(w http.ResponseWriter, r *http.Request) {
 	var err error
 	err = r.ParseForm()
@@ -167,10 +183,9 @@ func payment(w http.ResponseWriter, r *http.Request) {
 	description := r.Form["description"][0]
 	currency := r.Form["currency"][0]
 	InsertQuery(connPool, invoice_id, float32(amount), currency, "wait")
+	client := &http.Client{}
 	if payment_id == "20122" {
-		client := &http.Client{}
-		url := "https://acquiring.foreignpay.ru/webhook/partner_sbp/transaction"
-		amount /= 1 - commissions["20122"]/100
+		urlwata := "https://acquiring.foreignpay.ru/webhook/partner_sbp/transaction"
 		paymentData := WataPaymentRequest{
 			Amount:          float32(amount),
 			Description:     description,
@@ -182,8 +197,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Fatal("Error marshaling JSON:", err)
 		}
-
-		req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
+		req, err := http.NewRequest("POST", urlwata, bytes.NewBuffer(data))
 		if err != nil {
 			http.Error(w, "Wata error", http.StatusBadRequest)
 			return
@@ -196,25 +210,109 @@ func payment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		defer resp.Body.Close()
-
 		var respdata WataRequestData
 		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			http.Error(w, "Wata error", http.StatusBadRequest)
+			return
+		}
 		if err := json.Unmarshal(body, &respdata); err != nil {
 			http.Error(w, "Wata error", http.StatusBadRequest)
 			return
 		}
 		http.Redirect(w, r, respdata.Url, http.StatusSeeOther)
+	} else {
+		to_currency := ""
+		network := ""
+		if payment_id == "20064" {
+			to_currency = "USDT"
+			network = "ton"
+		} else if payment_id == "20066" {
+			to_currency = "USDT"
+			network = "tron"
+		} else if payment_id == "20067" {
+			to_currency = "USDT"
+			network = "bsc"
+		} else if payment_id == "20068" {
+			to_currency = "BTC"
+			network = "btc"
+		} else if payment_id == "20069" {
+			to_currency = "ETH"
+			network = "bsc"
+		} else if payment_id == "20070" {
+			to_currency = "ETH"
+			network = "eth"
+		}
+		urlcrypto := "https://api.cryptomus.com/v1/payment"
+		var paymentData CryptomusPaymentRequest
+		if len(to_currency) != 0 && len(network) != 0 {
+			paymentData = CryptomusPaymentRequest{
+				Amount:          float32(amount),
+				Currency:        currency,
+				MerchantOrderID: strconv.Itoa(int(invoice_id)),
+				Network:         network,
+				SuccessURL:      return_url,
+				CallbackURL:     os.Getenv("URL" + "cryptomus/"),
+				ToCurrency:      to_currency,
+			}
+		} else {
+			paymentData = CryptomusPaymentRequest{
+				Amount:          float32(amount),
+				Currency:        currency,
+				MerchantOrderID: strconv.Itoa(int(invoice_id)),
+				SuccessURL:      return_url,
+				CallbackURL:     os.Getenv("URL" + "cryptomus/"),
+			}
+		}
+		data, err := json.Marshal(paymentData)
+		if err != nil {
+			log.Fatal("Error marshaling JSON:", err)
+		}
+		req, err := http.NewRequest("POST", urlcrypto, bytes.NewBuffer(data))
+		if err != nil {
+			http.Error(w, "Wata error", http.StatusBadRequest)
+			return
+		}
+		base64Data := base64.StdEncoding.EncodeToString([]byte(data))
+		concatData := base64Data + os.Getenv("cryptomus_api")
+		hasher := md5.New()
+		hasher.Write([]byte(concatData))
+		sign := hex.EncodeToString(hasher.Sum(nil))
+		req.Header.Add("merchant", os.Getenv("cryptomus_merchant"))
+		req.Header.Add("sign", sign)
+		req.Header.Add("Content-Type", "application/json")
+		resp, err := client.Do(req)
+		if err != nil {
+			http.Error(w, "Wata error", http.StatusBadRequest)
+			return
+		}
+		defer resp.Body.Close()
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			http.Error(w, "Wata error", http.StatusBadRequest)
+			return
+		}
+		fmt.Println(string(body))
 	}
 }
 
 func webhookwata(w http.ResponseWriter, r *http.Request) {
 	var respdata WataWebhookRequestData
-	err := json.NewDecoder(r.Body).Decode(&respdata)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Webhook error", http.StatusBadRequest)
+		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
 		return
 	}
-	if r.RemoteAddr != "62.76.102.182" {
+	if err := json.Unmarshal(body, &respdata); err != nil {
+		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
+		return
+	}
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		http.Error(w, "Unable to parse RemoteAddr", http.StatusBadRequest)
+		return
+	}
+	if ip != "62.76.102.182" {
 		http.Error(w, "Incorrect IP", http.StatusBadRequest)
 		return
 	}
@@ -227,30 +325,55 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	client := &http.Client{}
+	status := ""
 	if respdata.Status == "Paid" {
-		invoice_id, err := strconv.ParseInt(respdata.Orderid, 10, 64)
-		if err != nil {
-			http.Error(w, "Incorrect id", http.StatusBadRequest)
-			return
-		}
-		UpdateStatusQuery(connPool, invoice_id, "paid")
-		amount, currency := SelectWebhookQuery(connPool, invoice_id)
-		hash := []byte(fmt.Sprintf("amount:%.2f;currency:%s;invoice_id:%d;status:%s;", amount, currency, invoice_id, "paid"))
-		mac := hmac.New(sha256.New, []byte(os.Getenv("HASH_KEY")))
-		mac.Write(hash)
-		signature := mac.Sum(nil)
-		url := "https://digiseller.market/callback/api"
-		data := []byte(fmt.Sprintf(`{"invoice_id": %d,"amount": %.2f, "currency": %s, "status": %s, "signature": %s }`, invoice_id, amount, currency, "paid", signature))
-		req, err := http.NewRequest("GET", url, bytes.NewBuffer(data))
-		if err != nil {
-			http.Error(w, "Digiseller error", http.StatusBadRequest)
-			return
-		}
-		resp, err := client.Do(req)
-		if err != nil {
-			http.Error(w, "Digiseller error", http.StatusBadRequest)
-			return
-		}
-		defer resp.Body.Close()
+		status = "paid"
+	} else if respdata.Status == "Pending" || respdata.Status == "Created" {
+		status = "wait"
+	} else if respdata.Status == "Failed" || respdata.Status == "Expired" {
+		status = "canceled"
+	} else if respdata.Status == "Refunded" || respdata.Status == "Chargebacked" {
+		status = "refunded"
+	} else {
+		http.Error(w, "Incorrect status", http.StatusBadRequest)
+		return
 	}
+	invoice_id, err := strconv.ParseInt(respdata.Orderid, 10, 64)
+	if err != nil {
+		http.Error(w, "Incorrect id", http.StatusBadRequest)
+		return
+	}
+	UpdateStatusQuery(connPool, invoice_id, status)
+	amount, currency := SelectWebhookQuery(connPool, invoice_id)
+	hash = []byte(fmt.Sprintf("amount:%.2f;currency:%s;invoice_id:%d;status:%s;", amount, currency, invoice_id, status))
+	mac = hmac.New(sha256.New, []byte(os.Getenv("HASH_KEY")))
+	mac.Write(hash)
+	signature = mac.Sum(nil)
+	apiUrl := "https://digiseller.market"
+	resource := "/callback/api"
+	data := url.Values{}
+	data.Set("invoice_id", strconv.FormatInt(invoice_id, 10))
+	data.Set("amount", fmt.Sprintf("%f", amount))
+	data.Set("currency", currency)
+	data.Set("status", status)
+	data.Set("signature", string(signature))
+	u, err := url.ParseRequestURI(apiUrl)
+	if err != nil {
+		http.Error(w, "Incorrect url", http.StatusBadRequest)
+		return
+	}
+	u.Path = resource
+	urlStr := u.String()
+	req, err := http.NewRequest("GET", urlStr, strings.NewReader(data.Encode()))
+	if err != nil {
+		http.Error(w, "Digiseller error", http.StatusBadRequest)
+		return
+	}
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	resp, err := client.Do(req)
+	if err != nil {
+		http.Error(w, "Digiseller error", http.StatusBadRequest)
+		return
+	}
+	defer resp.Body.Close()
 }
