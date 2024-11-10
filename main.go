@@ -185,6 +185,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Fatal("Error marshaling JSON:", err)
 		}
+		fmt.Println("Request JSON:", string(data))
 		req, err := http.NewRequest("POST", url, bytes.NewBuffer(data))
 		if err != nil {
 			fmt.Println(err)
@@ -199,6 +200,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Wata error", http.StatusBadRequest)
 			return
 		}
+		fmt.Println("Response Status:", resp.Status)
 		defer resp.Body.Close()
 
 		body, err := io.ReadAll(resp.Body)
