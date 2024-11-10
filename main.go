@@ -167,9 +167,9 @@ type CryptomusRequestData struct {
 }
 
 type CryptomusResultData struct {
-	Transid string  `json:"order_id"`
-	Amount  float32 `json:"amount"`
-	Url     string  `json:"url"`
+	Transid string `json:"order_id"`
+	Amount  string `json:"amount"`
+	Url     string `json:"url"`
 }
 
 func payment(w http.ResponseWriter, r *http.Request) {
