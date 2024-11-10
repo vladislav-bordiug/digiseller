@@ -179,8 +179,12 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	payment_id := r.Form["payment_id"][0]
-	return_url := r.Form["return_url"][0]
-	fmt.Println(return_url)
+	returnurl := r.Form["return_url"][0]
+	return_url, err := url.QueryUnescape(returnurl)
+	if err != nil {
+		http.Error(w, "Error in encoding returning url:", http.StatusBadRequest)
+		return
+	}
 	description := r.Form["description"][0]
 	currency := r.Form["currency"][0]
 	InsertQuery(connPool, invoice_id, float32(amount), currency, "wait")
@@ -196,7 +200,8 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		}
 		data, err := json.Marshal(paymentData)
 		if err != nil {
-			log.Fatal("Error marshaling JSON:", err)
+			http.Error(w, "Error marshaling JSON:", http.StatusBadRequest)
+			return
 		}
 		req, err := http.NewRequest("POST", urlwata, bytes.NewBuffer(data))
 		if err != nil {
