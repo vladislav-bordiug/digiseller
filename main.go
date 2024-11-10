@@ -123,9 +123,9 @@ func main() {
 }
 
 type WataRequestData struct {
-	Transid string `json:"order_uuid"`
-	Amount  int    `json:"amount"`
-	Url     string `json:"acquiring_page"`
+	Transid string  `json:"order_uuid"`
+	Amount  float32 `json:"amount"`
+	Url     string  `json:"acquiring_page"`
 }
 
 type WataWebhookRequestData struct {
