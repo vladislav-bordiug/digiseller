@@ -138,13 +138,15 @@ type WataWebhookRequestData struct {
 
 func payment(w http.ResponseWriter, r *http.Request) {
 	var err error
-	invoice_id, err := strconv.ParseInt(r.FormValue("invoice_id"), 10, 64)
+	invid := r.FormValue("invoice_id")
+	invoice_id, err := strconv.ParseInt(invid, 10, 64)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Incorrect id", http.StatusBadRequest)
 		return
 	}
-	amount, err := strconv.ParseFloat(r.FormValue("amount"), 32)
+	amt := r.FormValue("amount")
+	amount, err := strconv.ParseFloat(amt, 32)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, "Incorrect amount", http.StatusBadRequest)
