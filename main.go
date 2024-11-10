@@ -200,14 +200,34 @@ func payment(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		defer resp.Body.Close()
-		var respdata WataRequestData
+
 		body, err := io.ReadAll(resp.Body)
-		fmt.Println(string(body))
-		if err := json.Unmarshal(body, &respdata); err != nil {
-			fmt.Println("Wata error")
+		if err != nil {
+			log.Fatal(err)
 		}
-		fmt.Println(respdata)
-		http.Redirect(w, r, respdata.Url, http.StatusSeeOther)
+
+		var result map[string]interface{}
+		err = json.Unmarshal(body, &result)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		jsonData, err := json.Marshal(result)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		jsonString := string(jsonData)
+		fmt.Println(jsonString)
+
+		//var respdata WataRequestData
+		//body, err := io.ReadAll(resp.Body)
+		//fmt.Println(string(body))
+		//if err := json.Unmarshal(body, &respdata); err != nil {
+		//	fmt.Println("Wata error")
+		//}
+		//fmt.Println(respdata)
+		//http.Redirect(w, r, respdata.Url, http.StatusSeeOther)
 	}
 }
 
