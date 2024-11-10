@@ -54,7 +54,7 @@ func Config() *pgxpool.Config {
 }
 
 func CreateTableQuery(p *pgxpool.Pool) {
-	_, err := p.Exec(context.Background(), "CREATE TABLE orders (invoice_id BIGINT PRIMARY KEY,amount NUMERIC(10, 2) NOT NULL,currency VARCHAR(3) NOT NULL, status VARCHAR(10) NOT NULL);")
+	_, err := p.Exec(context.Background(), "CREATE TABLE IF NOT EXISTS orders (invoice_id BIGINT PRIMARY KEY,amount NUMERIC(10, 2) NOT NULL,currency VARCHAR(3) NOT NULL, status VARCHAR(10) NOT NULL);")
 	if err != nil {
 		log.Fatal("Error while creating the table")
 	}
