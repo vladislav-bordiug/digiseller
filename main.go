@@ -488,6 +488,7 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println(respdata)
 	http.Error(w, "Incorrect IP", http.StatusBadRequest)
+	return
 	IPAddress := r.Header.Get("X-Forwarded-For")
 	if IPAddress != "91.227.144.54" {
 		http.Error(w, "Incorrect IP", http.StatusBadRequest)
