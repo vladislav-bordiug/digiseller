@@ -463,11 +463,17 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
 		return
 	}
-	fmt.Println(string(body))
 	if err := json.Unmarshal(body, &respdata); err != nil {
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
 		return
 	}
+
+	prettyJSON, err := json.MarshalIndent(respdata, "", "  ")
+	if err != nil {
+		log.Fatalf("Error marshaling JSON: %v", err)
+	}
+	fmt.Println(string(prettyJSON))
+
 	IPAddress := r.Header.Get("X-Forwarded-For")
 	if IPAddress != "91.227.144.54" {
 		http.Error(w, "Incorrect IP", http.StatusBadRequest)
