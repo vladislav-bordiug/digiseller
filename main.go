@@ -457,6 +457,29 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 	defer resp.Body.Close()
 }
 
+func (r CryptomusWebhookRequestData) String() string {
+	return fmt.Sprintf("{type %s uuid %s order_id %s amount %s payment_amount %s payment_amount_usd %s merchant_amount %s commission %s is_final %v status %s from %s wallet_address_uuid %s network %s currency %s payer_currency %s additional_data %s convert %v txid %s}",
+		r.Type,
+		r.Uuid,
+		r.OrderID,
+		r.Amount,
+		r.PaymentAmount,
+		r.PaymentAmountUSD,
+		r.MerchantAmount,
+		r.Commission,
+		r.IsFinal,
+		r.Status,
+		r.From,
+		r.WalletAddressUUID,
+		r.Network,
+		r.Currency,
+		r.PayerCurrency,
+		r.AdditionalData,
+		r.Convert,
+		r.Txid,
+	)
+}
+
 func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	var respdata CryptomusWebhookRequestData
 	body, err := io.ReadAll(r.Body)
@@ -469,7 +492,7 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
 		return
 	}
-	fmt.Println(respdata)
+	fmt.Println(respdata.String())
 	IPAddress := r.Header.Get("X-Forwarded-For")
 	if IPAddress != "91.227.144.54" {
 		http.Error(w, "Incorrect IP", http.StatusBadRequest)
@@ -486,7 +509,8 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error marshaling JSON:", http.StatusBadRequest)
 		return
 	}
-	sign := md5hash(json_data)
+	escapedJsonData := strings.ReplaceAll(string(json_data), "/", "\\/")
+	sign := md5hash([]byte(escapedJsonData))
 	fmt.Println(sign)
 	if sign != received_sign.Signature {
 		http.Error(w, "Invalid hash, signatures do not match!", http.StatusBadRequest)
