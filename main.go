@@ -476,6 +476,10 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 }
 
 func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
+	bytedata, err := io.ReadAll(r.Body)
+	reqBodyString := string(bytedata)
+	fmt.Println(reqBodyString)
+	return
 	var respdata CryptomusWebhookRequestData
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
