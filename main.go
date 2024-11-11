@@ -14,7 +14,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"io"
 	"log"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -405,17 +404,16 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
 		return
 	}
-	ip, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		http.Error(w, "Unable to parse RemoteAddr", http.StatusBadRequest)
-		return
-	}
-	if ip != "62.76.102.182" {
+	fmt.Println(respdata)
+	IPAddress := r.Header.Get("X-Forwarded-For")
+	fmt.Println(IPAddress)
+	if IPAddress != "62.76.102.182" {
 		http.Error(w, "Incorrect IP", http.StatusBadRequest)
 		return
 	}
 	hash := []byte(fmt.Sprintf("%s%s", respdata.Transid, os.Getenv("wata_sbp_token")))
 	signature := sha256hmac(hash)
+	fmt.Println(respdata.Hash, hex.EncodeToString(signature))
 	if !hmac.Equal([]byte(respdata.Hash), signature) {
 		http.Error(w, "Incorrect signature", http.StatusBadRequest)
 		return
@@ -443,22 +441,10 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 	amount, currency := SelectWebhookQuery(connPool, invoice_id)
 	hash = []byte(fmt.Sprintf("amount:%.2f;currency:%s;invoice_id:%d;status:%s;", amount, currency, invoice_id, status))
 	signature = sha256hmac(hash)
-	apiUrl := "https://digiseller.market"
-	resource := "/callback/api"
-	data := url.Values{}
-	data.Set("invoice_id", strconv.FormatInt(invoice_id, 10))
-	data.Set("amount", fmt.Sprintf("%f", amount))
-	data.Set("currency", currency)
-	data.Set("status", status)
-	data.Set("signature", strings.ToUpper(hex.EncodeToString(signature)))
-	u, err := url.ParseRequestURI(apiUrl)
-	if err != nil {
-		http.Error(w, "Incorrect url", http.StatusBadRequest)
-		return
-	}
-	u.Path = resource
-	urlStr := u.String()
-	req, err := http.NewRequest("GET", urlStr, strings.NewReader(data.Encode()))
+	apiUrl := "https://digiseller.market/callback/api"
+	urlStr := fmt.Sprintf("%s?invoice_id=%s&amount=%.2f&currency=%s&status=%s&signature=%s",
+		apiUrl, respdata.Orderid, amount, currency, status, strings.ToUpper(hex.EncodeToString(signature)))
+	req, err := http.NewRequest("GET", urlStr, nil)
 	if err != nil {
 		http.Error(w, "Digiseller error", http.StatusBadRequest)
 		return
