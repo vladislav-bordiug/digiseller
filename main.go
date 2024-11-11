@@ -501,6 +501,7 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	resource := "/callback/api"
 	data := url.Values{}
 	fmt.Println(strconv.FormatInt(invoice_id, 10))
+	fmt.Println(fmt.Sprintf("%.2f", amount), currency, status, strings.ToUpper(hex.EncodeToString(signature)))
 	data.Set("invoice_id", respdata.OrderID)
 	data.Set("amount", fmt.Sprintf("%.2f", amount))
 	data.Set("currency", currency)
