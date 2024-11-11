@@ -195,16 +195,16 @@ type DigisellerStatusAnswer struct {
 }
 
 type CryptomusWebhookRequestData struct {
-	Type                    *string `json:"type"`
-	Uuid                    *string `json:"uuid"`
-	OrderID                 *string `json:"order_id"`
-	Amount                  *string `json:"amount"`
-	PaymentAmount           *string `json:"payment_amount"`
-	PaymentAmountUSD        *string `json:"payment_amount_usd"`
-	MerchantAmount          *string `json:"merchant_amount"`
-	Commission              *string `json:"commission"`
-	IsFinal                 *bool   `json:"is_final"`
-	Status                  *string `json:"status"`
+	Type                    string  `json:"type"`
+	Uuid                    string  `json:"uuid"`
+	OrderID                 string  `json:"order_id"`
+	Amount                  string  `json:"amount"`
+	PaymentAmount           string  `json:"payment_amount"`
+	PaymentAmountUSD        string  `json:"payment_amount_usd"`
+	MerchantAmount          string  `json:"merchant_amount"`
+	Commission              string  `json:"commission"`
+	IsFinal                 bool    `json:"is_final"`
+	Status                  string  `json:"status"`
 	From                    *string `json:"from"`
 	WalletAddressUUID       *string `json:"wallet_address_uuid"`
 	Network                 *string `json:"network"`
