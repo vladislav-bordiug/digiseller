@@ -549,6 +549,7 @@ func status(w http.ResponseWriter, r *http.Request) {
 	}
 	var reqdata DigisellerStatus
 	if err := json.Unmarshal(body, &reqdata); err != nil {
+		fmt.Println(err)
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
 		return
 	}
