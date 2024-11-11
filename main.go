@@ -542,16 +542,14 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 
 func status(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Incorrect requestdata", http.StatusBadRequest)
-		return
-	}
+	query := r.URL.Query()
 	var reqdata DigisellerStatus
-	if err := json.Unmarshal(body, &reqdata); err != nil {
-		fmt.Println(err)
-		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
-		return
+	reqdata = DigisellerStatus{
+		Transid:   query.Get("invoice_id"),
+		Sellerid:  query.Get("seller_id"),
+		Amount:    query.Get("amount"),
+		Currency:  query.Get("currency"),
+		Signature: query.Get("signature"),
 	}
 	fmt.Println(reqdata)
 	var answerData DigisellerStatusAnswer
