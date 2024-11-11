@@ -481,10 +481,7 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
 		return
 	}
-	var result []struct {
-		Key   string      `json:"key"`
-		Value interface{} `json:"value"`
-	}
+	var result map[string]interface{}
 
 	err = json.Unmarshal(body, &result)
 	if err != nil {
@@ -492,8 +489,14 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for _, item := range result {
-		fmt.Printf("Key: %s, Value: %v\n", item.Key, item.Value)
+	keys := []string{}
+	for key := range result {
+		keys = append(keys, key)
+	}
+
+	for _, key := range keys {
+		value := result[key]
+		fmt.Printf("Key: %s, Value: %v\n", key, value)
 	}
 
 	var respdata CryptomusWebhookRequestData
