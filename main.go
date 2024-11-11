@@ -178,6 +178,22 @@ type CryptomusError struct {
 	Message string `json:"message"`
 }
 
+type DigisellerStatus struct {
+	Transid   string  `json:"invoice_id"`
+	Sellerid  string  `json:"seller_id"`
+	Amount    float32 `json:"amount"`
+	Currency  string  `json:"currency"`
+	Signature string  `json:"signature"`
+}
+
+type DigisellerStatusAnswer struct {
+	Transid   string  `json:"invoice_id"`
+	Amount    float32 `json:"amount"`
+	Currency  string  `json:"currency"`
+	Status    string  `json:"status"`
+	Signature string  `json:"signature"`
+}
+
 type WebhookConvert struct {
 	ToCurrency string `json:"to_currency"`
 	Commission string `json:"commission"`
@@ -526,4 +542,25 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 
 func status(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Incorrect requestdata", http.StatusBadRequest)
+		return
+	}
+	var reqdata DigisellerStatus
+	if err := json.Unmarshal(body, &reqdata); err != nil {
+		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
+		return
+	}
+	fmt.Println(reqdata)
+	var answerData DigisellerStatusAnswer
+	answerData = DigisellerStatusAnswer{
+		Transid:   "12345",
+		Amount:    10.00,
+		Currency:  "USD",
+		Status:    "paid",
+		Signature: "FB4902995B8EDC36D9DC66F743E9E9CF9607284928E3CD484A0AA",
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(answerData)
 }
