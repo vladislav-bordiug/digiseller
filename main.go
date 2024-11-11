@@ -179,19 +179,19 @@ type CryptomusError struct {
 }
 
 type DigisellerStatus struct {
-	Transid   string  `json:"invoice_id"`
-	Sellerid  string  `json:"seller_id"`
-	Amount    float32 `json:"amount"`
-	Currency  string  `json:"currency"`
-	Signature string  `json:"signature"`
+	Transid   string `json:"invoice_id"`
+	Sellerid  string `json:"seller_id"`
+	Amount    string `json:"amount"`
+	Currency  string `json:"currency"`
+	Signature string `json:"signature"`
 }
 
 type DigisellerStatusAnswer struct {
-	Transid   string  `json:"invoice_id"`
-	Amount    float32 `json:"amount"`
-	Currency  string  `json:"currency"`
-	Status    string  `json:"status"`
-	Signature string  `json:"signature"`
+	Transid   string `json:"invoice_id"`
+	Amount    string `json:"amount"`
+	Currency  string `json:"currency"`
+	Status    string `json:"status"`
+	Signature string `json:"signature"`
 }
 
 type WebhookConvert struct {
@@ -554,12 +554,14 @@ func status(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println(reqdata)
 	var answerData DigisellerStatusAnswer
+	hash := []byte(fmt.Sprintf("amount:%.2f;currency:%s;invoice_id:%d;status:%s;", reqdata.Amount, reqdata.Currency, reqdata.Transid, "paid"))
+	signature := sha256hmac(hash)
 	answerData = DigisellerStatusAnswer{
-		Transid:   "12345",
-		Amount:    10.00,
-		Currency:  "USD",
+		Transid:   reqdata.Transid,
+		Amount:    reqdata.Amount,
+		Currency:  reqdata.Currency,
 		Status:    "paid",
-		Signature: "FB4902995B8EDC36D9DC66F743E9E9CF9607284928E3CD484A0AA",
+		Signature: strings.ToUpper(hex.EncodeToString(signature)),
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(answerData)
