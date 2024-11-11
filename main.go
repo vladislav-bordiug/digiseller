@@ -208,6 +208,22 @@ type CryptomusSignWebhookRequestData struct {
 	Signature string `json:"sign"`
 }
 
+func md5hash(data []byte) string {
+	base64Data := base64.StdEncoding.EncodeToString(data)
+	concatData := base64Data + os.Getenv("cryptomus_api")
+	hasher := md5.New()
+	hasher.Write([]byte(concatData))
+	sign := hex.EncodeToString(hasher.Sum(nil))
+	return sign
+}
+
+func sha256hmac(data []byte) []byte {
+	mac := hmac.New(sha256.New, []byte(os.Getenv("HASH_KEY")))
+	mac.Write(data)
+	signature := mac.Sum(nil)
+	return signature
+}
+
 func payment(w http.ResponseWriter, r *http.Request) {
 	var err error
 	err = r.ParseForm()
@@ -321,6 +337,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 				CallbackURL:     os.Getenv("URL") + "webhookcryptomus/",
 			}
 		}
+		fmt.Println(os.Getenv("URL") + "webhookcryptomus/")
 		data, err := json.Marshal(paymentData)
 		if err != nil {
 			http.Error(w, "Error marshaling JSON:", http.StatusBadRequest)
@@ -331,11 +348,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Cryptomus error", http.StatusBadRequest)
 			return
 		}
-		base64Data := base64.StdEncoding.EncodeToString(data)
-		concatData := base64Data + os.Getenv("cryptomus_api")
-		hasher := md5.New()
-		hasher.Write([]byte(concatData))
-		sign := hex.EncodeToString(hasher.Sum(nil))
+		sign := md5hash(data)
 		req.Header.Add("merchant", os.Getenv("cryptomus_merchant"))
 		req.Header.Add("sign", sign)
 		req.Header.Add("Content-Type", "application/json")
@@ -389,9 +402,7 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	hash := []byte(fmt.Sprintf("%s%s", respdata.Transid, os.Getenv("wata_sbp_token")))
-	mac := hmac.New(sha256.New, []byte(os.Getenv("HASH_KEY")))
-	mac.Write(hash)
-	signature := mac.Sum(nil)
+	signature := sha256hmac(hash)
 	if !hmac.Equal([]byte(respdata.Hash), signature) {
 		http.Error(w, "Incorrect signature", http.StatusBadRequest)
 		return
@@ -418,9 +429,7 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 	UpdateStatusQuery(connPool, invoice_id, status)
 	amount, currency := SelectWebhookQuery(connPool, invoice_id)
 	hash = []byte(fmt.Sprintf("amount:%.2f;currency:%s;invoice_id:%d;status:%s;", amount, currency, invoice_id, status))
-	mac = hmac.New(sha256.New, []byte(os.Getenv("HASH_KEY")))
-	mac.Write(hash)
-	signature = mac.Sum(nil)
+	signature = sha256hmac(hash)
 	apiUrl := "https://digiseller.market"
 	resource := "/callback/api"
 	data := url.Values{}
@@ -470,24 +479,17 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect IP", http.StatusBadRequest)
 		return
 	}
-
 	var received_sign CryptomusSignWebhookRequestData
 	if err := json.Unmarshal(body, &received_sign); err != nil {
 		http.Error(w, "Cryptomus error", http.StatusBadRequest)
 		return
 	}
-
 	json_data, err := json.Marshal(respdata)
 	if err != nil {
 		http.Error(w, "Error marshaling JSON:", http.StatusBadRequest)
 		return
 	}
-
-	base64Data := base64.StdEncoding.EncodeToString(json_data)
-	concatData := base64Data + os.Getenv("cryptomus_api")
-	hasher := md5.New()
-	hasher.Write([]byte(concatData))
-	sign := hex.EncodeToString(hasher.Sum(nil))
+	sign := md5hash(json_data)
 	if sign != received_sign.Signature {
 		http.Error(w, "Invalid hash, signatures do not match!", http.StatusBadRequest)
 		return
@@ -514,9 +516,7 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	UpdateStatusQuery(connPool, invoice_id, status)
 	amount, currency := SelectWebhookQuery(connPool, invoice_id)
 	hash := []byte(fmt.Sprintf("amount:%.2f;currency:%s;invoice_id:%d;status:%s;", amount, currency, invoice_id, status))
-	mac := hmac.New(sha256.New, []byte(os.Getenv("HASH_KEY")))
-	mac.Write(hash)
-	signature := mac.Sum(nil)
+	signature := sha256hmac(hash)
 	apiUrl := "https://digiseller.market"
 	resource := "/callback/api"
 	data := url.Values{}
