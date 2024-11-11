@@ -120,7 +120,6 @@ func main() {
 	if err != nil {
 		log.Fatal("Could not ping database")
 	}
-
 	CreateTableQuery(connPool)
 	defer connPool.Close()
 	http.HandleFunc("/payment/", payment)
@@ -337,7 +336,6 @@ func payment(w http.ResponseWriter, r *http.Request) {
 				CallbackURL:     os.Getenv("URL") + "webhookcryptomus/",
 			}
 		}
-		fmt.Println(os.Getenv("URL") + "webhookcryptomus/")
 		data, err := json.Marshal(paymentData)
 		if err != nil {
 			http.Error(w, "Error marshaling JSON:", http.StatusBadRequest)
@@ -437,7 +435,7 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 	data.Set("amount", fmt.Sprintf("%f", amount))
 	data.Set("currency", currency)
 	data.Set("status", status)
-	data.Set("signature", string(signature))
+	data.Set("signature", strings.ToUpper(hex.EncodeToString(signature)))
 	u, err := url.ParseRequestURI(apiUrl)
 	if err != nil {
 		http.Error(w, "Incorrect url", http.StatusBadRequest)
@@ -466,11 +464,14 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
 		return
 	}
+	fmt.Println(string(body))
 	if err := json.Unmarshal(body, &respdata); err != nil {
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
 		return
 	}
+	fmt.Println(respdata)
 	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	fmt.Println(r.RemoteAddr, ip)
 	if err != nil {
 		http.Error(w, "Unable to parse RemoteAddr", http.StatusBadRequest)
 		return
@@ -484,12 +485,14 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Cryptomus error", http.StatusBadRequest)
 		return
 	}
+	fmt.Println(received_sign)
 	json_data, err := json.Marshal(respdata)
 	if err != nil {
 		http.Error(w, "Error marshaling JSON:", http.StatusBadRequest)
 		return
 	}
 	sign := md5hash(json_data)
+	fmt.Println(sign)
 	if sign != received_sign.Signature {
 		http.Error(w, "Invalid hash, signatures do not match!", http.StatusBadRequest)
 		return
@@ -517,6 +520,7 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	amount, currency := SelectWebhookQuery(connPool, invoice_id)
 	hash := []byte(fmt.Sprintf("amount:%.2f;currency:%s;invoice_id:%d;status:%s;", amount, currency, invoice_id, status))
 	signature := sha256hmac(hash)
+	fmt.Println(signature)
 	apiUrl := "https://digiseller.market"
 	resource := "/callback/api"
 	data := url.Values{}
@@ -524,7 +528,7 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	data.Set("amount", fmt.Sprintf("%f", amount))
 	data.Set("currency", currency)
 	data.Set("status", status)
-	data.Set("signature", string(signature))
+	data.Set("signature", strings.ToUpper(hex.EncodeToString(signature)))
 	u, err := url.ParseRequestURI(apiUrl)
 	if err != nil {
 		http.Error(w, "Incorrect url", http.StatusBadRequest)
@@ -543,5 +547,12 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Digiseller error", http.StatusBadRequest)
 		return
 	}
+	fmt.Println(resp.Status)
+	bodyy, err := io.ReadAll(resp.Body)
+	if err != nil {
+		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
+		return
+	}
+	fmt.Println(string(bodyy))
 	defer resp.Body.Close()
 }
