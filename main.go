@@ -503,6 +503,7 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error marshaling JSON:", http.StatusBadRequest)
 		return
 	}
+	data = []byte(strings.Replace(string(data), `/`, `\/`, -1))
 	sign := md5hash(data)
 	fmt.Println(sign)
 	return
