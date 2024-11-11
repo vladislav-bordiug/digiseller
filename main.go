@@ -494,7 +494,7 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	}
 	UpdateStatusQuery(connPool, invoice_id, status)
 	amount, currency := SelectWebhookQuery(connPool, invoice_id)
-	hash := []byte(fmt.Sprintf("amount:%.2f;currency:%s;invoice_id:%d;status:%s;", amount, currency, invoice_id, status))
+	hash := []byte(fmt.Sprintf("amount:%.2f;currency:%s;invoice_id:%d;status:%s;", amount-1, currency, invoice_id, status))
 	signature := sha256hmac(hash)
 	apiUrl := "https://digiseller.market/callback/api"
 	urlStr := fmt.Sprintf("%s?invoice_id=%s&amount=%.2f&currency=%s&status=%s&signature=%s",
