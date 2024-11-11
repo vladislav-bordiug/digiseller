@@ -467,39 +467,9 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
 		return
 	}
-
-	prettyJSON, err := json.MarshalIndent(respdata, "", "  ")
-	if err != nil {
-		log.Fatalf("Error marshaling JSON: %v", err)
-	}
-	fmt.Println(string(prettyJSON))
-
 	IPAddress := r.Header.Get("X-Forwarded-For")
 	if IPAddress != "91.227.144.54" {
 		http.Error(w, "Incorrect IP", http.StatusBadRequest)
-		return
-	}
-	json_data, err := json.Marshal(respdata)
-	if err != nil {
-		http.Error(w, "Error marshaling JSON:", http.StatusBadRequest)
-		return
-	}
-	var jsonBody map[string]any
-	err = json.Unmarshal(json_data, &jsonBody)
-	if err != nil {
-		http.Error(w, "Error unmarshaling JSON:", http.StatusBadRequest)
-		return
-	}
-	reqSign, ok := jsonBody["sign"].(string)
-	if !ok {
-		http.Error(w, "Incorrect sign", http.StatusBadRequest)
-		return
-	}
-	delete(jsonBody, "sign")
-	sign := md5hash(json_data)
-	fmt.Println(sign)
-	if sign != reqSign {
-		http.Error(w, "Invalid hash, signatures do not match!", http.StatusBadRequest)
 		return
 	}
 	client := &http.Client{}
