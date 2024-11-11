@@ -240,8 +240,6 @@ func sha256hmac(data []byte) []byte {
 }
 
 func payment(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	return
 	var err error
 	err = r.ParseForm()
 	if err != nil {
@@ -395,6 +393,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		}
 		http.Redirect(w, r, respdata.Result.Url, http.StatusSeeOther)
 	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func webhookwata(w http.ResponseWriter, r *http.Request) {
@@ -481,24 +480,15 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
 		return
 	}
-	var result map[string]interface{}
-
-	err = json.Unmarshal(body, &result)
-	if err != nil {
-		fmt.Println("Ошибка при парсинге JSON:", err)
-		return
-	}
-
-	keys := []string{}
-	for key := range result {
-		keys = append(keys, key)
-	}
-
-	for _, key := range keys {
-		value := result[key]
-		fmt.Printf("Key: %s, Value: %v\n", key, value)
-	}
-
+	buffer := bytes.NewBuffer(body)
+	str := buffer.String()
+	fmt.Println(str)
+	str2 := fmt.Sprintf("%s", body)
+	fmt.Println(str2)
+	var builder strings.Builder
+	builder.Write(body)
+	str3 := builder.String()
+	fmt.Println(str3)
 	var respdata CryptomusWebhookRequestData
 	if err := json.Unmarshal(body, &respdata); err != nil {
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
@@ -552,7 +542,6 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 }
 
 func status(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
 	query := r.URL.Query()
 	var reqdata DigisellerStatus
 	reqdata = DigisellerStatus{
@@ -575,4 +564,5 @@ func status(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(answerData)
+	w.WriteHeader(http.StatusOK)
 }
