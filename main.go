@@ -194,7 +194,7 @@ type CryptomusWebhookRequestData struct {
 	Currency          string `json:"currency"`
 	PayerCurrency     string `json:"payer_currency"`
 	AdditionalData    string `json:"additional_data"`
-	Convert           struct {
+	Convert           *struct {
 		ToCurrency string `json:"to_currency"`
 		Commission string `json:"commission"`
 		Rate       string `json:"rate"`
