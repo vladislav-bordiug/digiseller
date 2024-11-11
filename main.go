@@ -495,10 +495,10 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	amount, currency := SelectWebhookQuery(connPool, invoice_id)
 	hash := []byte(fmt.Sprintf("amount:%.2f;currency:%s;invoice_id:%d;status:%s;", amount, currency, invoice_id, status))
 	signature := sha256hmac(hash)
-	fmt.Println(signature)
 	apiUrl := "https://digiseller.market"
 	resource := "/callback/api"
 	data := url.Values{}
+	fmt.Println(strconv.FormatInt(invoice_id, 10))
 	data.Set("invoice_id", strconv.FormatInt(invoice_id, 10))
 	data.Set("amount", fmt.Sprintf("%f", amount))
 	data.Set("currency", currency)
