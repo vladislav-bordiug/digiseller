@@ -477,8 +477,8 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 
 func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	bytedata, err := io.ReadAll(r.Body)
-	r.Body = io.NopCloser(bytes.NewReader(bytedata))
 	reqBodyString := string(bytedata)
+	fmt.Printf("%x\n", bytedata)
 	fmt.Println(reqBodyString)
 	fmt.Println(bytedata)
 	return
