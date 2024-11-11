@@ -390,16 +390,17 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		}
 		http.Redirect(w, r, respdata.Result.Url, http.StatusSeeOther)
 	}
-	w.WriteHeader(http.StatusOK)
 }
 
 func webhookwata(w http.ResponseWriter, r *http.Request) {
 	var respdata WataWebhookRequestData
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
+		fmt.Println("Error reading body")
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
 		return
 	}
+	fmt.Println("All")
 	if err := json.Unmarshal(body, &respdata); err != nil {
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
 		return
@@ -559,5 +560,4 @@ func status(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(answerData)
-	w.WriteHeader(http.StatusOK)
 }
