@@ -486,6 +486,8 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
 		return
 	}
+	fmt.Println(respdata)
+	http.Error(w, "Incorrect IP", http.StatusBadRequest)
 	IPAddress := r.Header.Get("X-Forwarded-For")
 	if IPAddress != "91.227.144.54" {
 		http.Error(w, "Incorrect IP", http.StatusBadRequest)
@@ -505,7 +507,6 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect status", http.StatusBadRequest)
 		return
 	}
-	fmt.Println(respdata.OrderID)
 	invoice_id, err := strconv.ParseInt(respdata.OrderID, 10, 64)
 	if err != nil {
 		http.Error(w, "Incorrect id", http.StatusBadRequest)
@@ -518,7 +519,6 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	apiUrl := "https://digiseller.market/callback/api"
 	urlStr := fmt.Sprintf("%s?invoice_id=%s&amount=%.2f&currency=%s&status=%s&signature=%s",
 		apiUrl, respdata.OrderID, amount, currency, status, strings.ToUpper(hex.EncodeToString(signature)))
-	fmt.Println(urlStr)
 	req, err := http.NewRequest("GET", urlStr, nil)
 	if err != nil {
 		http.Error(w, "Digiseller error", http.StatusBadRequest)
@@ -530,13 +530,6 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Digiseller error", http.StatusBadRequest)
 		return
 	}
-	fmt.Println(resp.Status)
-	bodyy, err := io.ReadAll(resp.Body)
-	if err != nil {
-		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
-		return
-	}
-	fmt.Println(string(bodyy))
 	defer resp.Body.Close()
 }
 
