@@ -488,7 +488,6 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println(respdata.OrderID)
 	invoice_id, err := strconv.ParseInt(respdata.OrderID, 10, 64)
-	fmt.Println(invoice_id)
 	if err != nil {
 		http.Error(w, "Incorrect id", http.StatusBadRequest)
 		return
@@ -497,24 +496,16 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	amount, currency := SelectWebhookQuery(connPool, invoice_id)
 	hash := []byte(fmt.Sprintf("amount:%.2f;currency:%s;invoice_id:%d;status:%s;", amount, currency, invoice_id, status))
 	signature := sha256hmac(hash)
-	apiUrl := "https://digiseller.market"
-	resource := "/callback/api"
+	apiUrl := "https://digiseller.market/callback/api"
 	data := url.Values{}
-	fmt.Println(strconv.FormatInt(invoice_id, 10))
-	fmt.Println(fmt.Sprintf("%.2f", amount), currency, status, strings.ToUpper(hex.EncodeToString(signature)))
 	data.Set("invoice_id", respdata.OrderID)
 	data.Set("amount", fmt.Sprintf("%.2f", amount))
 	data.Set("currency", currency)
 	data.Set("status", status)
 	data.Set("signature", strings.ToUpper(hex.EncodeToString(signature)))
-	u, err := url.ParseRequestURI(apiUrl)
-	if err != nil {
-		http.Error(w, "Incorrect url", http.StatusBadRequest)
-		return
-	}
-	u.Path = resource
-	urlStr := u.String()
-	req, err := http.NewRequest("GET", urlStr, strings.NewReader(data.Encode()))
+	urlStr := fmt.Sprintf("%s?%s", apiUrl, data.Encode())
+	fmt.Println(urlStr)
+	req, err := http.NewRequest("GET", urlStr, nil)
 	if err != nil {
 		http.Error(w, "Digiseller error", http.StatusBadRequest)
 		return
