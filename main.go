@@ -497,13 +497,8 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	hash := []byte(fmt.Sprintf("amount:%.2f;currency:%s;invoice_id:%d;status:%s;", amount, currency, invoice_id, status))
 	signature := sha256hmac(hash)
 	apiUrl := "https://digiseller.market/callback/api"
-	data := url.Values{}
-	data.Set("invoice_id", respdata.OrderID)
-	data.Set("amount", fmt.Sprintf("%.2f", amount))
-	data.Set("currency", currency)
-	data.Set("status", status)
-	data.Set("signature", strings.ToUpper(hex.EncodeToString(signature)))
-	urlStr := fmt.Sprintf("%s?%s", apiUrl, data.Encode())
+	urlStr := fmt.Sprintf("%s?invoice_id=%d&amount=%.2f&currency=%s&status=%s&signature=%s",
+		apiUrl, respdata.OrderID, amount, currency, status, signature)
 	fmt.Println(urlStr)
 	req, err := http.NewRequest("GET", urlStr, nil)
 	if err != nil {
