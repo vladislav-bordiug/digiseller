@@ -500,8 +500,6 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect signature", http.StatusBadRequest)
 		return
 	}
-	fmt.Println("success")
-	return
 	IPAddress := r.Header.Get("X-Forwarded-For")
 	if IPAddress != "91.227.144.54" {
 		http.Error(w, "Incorrect IP", http.StatusBadRequest)
@@ -557,15 +555,20 @@ func status(w http.ResponseWriter, r *http.Request) {
 		Currency:  query.Get("currency"),
 		Signature: query.Get("signature"),
 	}
-	fmt.Println(reqdata)
+	invoice_id, err := strconv.ParseInt(reqdata.Transid, 10, 64)
+	if err != nil {
+		http.Error(w, "Incorrect id", http.StatusBadRequest)
+		return
+	}
+	status := SelectStatusQuery(connPool, invoice_id)
 	var answerData DigisellerStatusAnswer
-	hash := []byte(fmt.Sprintf("amount:%s;currency:%s;invoice_id:%s;status:%s;", reqdata.Amount, reqdata.Currency, reqdata.Transid, "paid"))
+	hash := []byte(fmt.Sprintf("amount:%s;currency:%s;invoice_id:%s;status:%s;", reqdata.Amount, reqdata.Currency, reqdata.Transid, status))
 	signature := sha256hmac(hash)
 	answerData = DigisellerStatusAnswer{
 		Transid:   reqdata.Transid,
 		Amount:    reqdata.Amount,
 		Currency:  reqdata.Currency,
-		Status:    "paid",
+		Status:    status,
 		Signature: strings.ToUpper(hex.EncodeToString(signature)),
 	}
 	w.Header().Set("Content-Type", "application/json")
