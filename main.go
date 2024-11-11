@@ -199,7 +199,7 @@ type CryptomusWebhookRequestData struct {
 		Commission string `json:"commission"`
 		Rate       string `json:"rate"`
 		Amount     string `json:"amount"`
-	} `json:"convert"`
+	} `json:"convert,omitempty"`
 	Txid string `json:"txid"`
 }
 
