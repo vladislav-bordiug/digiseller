@@ -486,7 +486,9 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect status", http.StatusBadRequest)
 		return
 	}
+	fmt.Println(respdata.OrderID)
 	invoice_id, err := strconv.ParseInt(respdata.OrderID, 10, 64)
+	fmt.Println(invoice_id)
 	if err != nil {
 		http.Error(w, "Incorrect id", http.StatusBadRequest)
 		return
@@ -499,8 +501,8 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	resource := "/callback/api"
 	data := url.Values{}
 	fmt.Println(strconv.FormatInt(invoice_id, 10))
-	data.Set("invoice_id", strconv.FormatInt(invoice_id, 10))
-	data.Set("amount", fmt.Sprintf("%f", amount))
+	data.Set("invoice_id", respdata.OrderID)
+	data.Set("amount", fmt.Sprintf("%.2f", amount))
 	data.Set("currency", currency)
 	data.Set("status", status)
 	data.Set("signature", strings.ToUpper(hex.EncodeToString(signature)))
