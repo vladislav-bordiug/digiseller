@@ -476,7 +476,9 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Unable to parse RemoteAddr", http.StatusBadRequest)
 		return
 	}
-	if ip != "91.227.144.54" {
+	IPAddress := r.Header.Get("X-Forwarded-For")
+	fmt.Println(IPAddress)
+	if IPAddress != "91.227.144.54" {
 		http.Error(w, "Incorrect IP", http.StatusBadRequest)
 		return
 	}
