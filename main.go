@@ -135,7 +135,7 @@ type WataRequestData struct {
 }
 
 type WataWebhookRequestData struct {
-	Transid string `json:"transaction_uuid"`
+	Transid string `json:"order_uuid"`
 	Amount  int    `json:"amount"`
 	Status  string `json:"status"`
 	Orderid string `json:"order_id"`
