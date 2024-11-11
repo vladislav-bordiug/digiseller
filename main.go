@@ -553,7 +553,7 @@ func status(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println(reqdata)
 	var answerData DigisellerStatusAnswer
-	hash := []byte(fmt.Sprintf("amount:%.2f;currency:%s;invoice_id:%d;status:%s;", reqdata.Amount, reqdata.Currency, reqdata.Transid, "paid"))
+	hash := []byte(fmt.Sprintf("amount:%s;currency:%s;invoice_id:%s;status:%s;", reqdata.Amount, reqdata.Currency, reqdata.Transid, "paid"))
 	signature := sha256hmac(hash)
 	answerData = DigisellerStatusAnswer{
 		Transid:   reqdata.Transid,
