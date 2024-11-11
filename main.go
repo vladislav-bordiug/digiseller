@@ -177,34 +177,33 @@ type CryptomusError struct {
 	Message string `json:"message"`
 }
 
-type CryptomusWebhookRequestData struct {
-	Type              string `json:"type"`
-	Uuid              string `json:"uuid"`
-	OrderID           string `json:"order_id"`
-	Amount            string `json:"amount"`
-	PaymentAmount     string `json:"payment_amount"`
-	PaymentAmountUSD  string `json:"payment_amount_usd"`
-	MerchantAmount    string `json:"merchant_amount"`
-	Commission        string `json:"commission"`
-	IsFinal           bool   `json:"is_final"`
-	Status            string `json:"status"`
-	From              string `json:"from"`
-	WalletAddressUUID string `json:"wallet_address_uuid"`
-	Network           string `json:"network"`
-	Currency          string `json:"currency"`
-	PayerCurrency     string `json:"payer_currency"`
-	AdditionalData    string `json:"additional_data"`
-	Convert           *struct {
-		ToCurrency string `json:"to_currency"`
-		Commission string `json:"commission"`
-		Rate       string `json:"rate"`
-		Amount     string `json:"amount"`
-	} `json:"convert,omitempty"`
-	Txid string `json:"txid"`
+type WebhookConvert struct {
+	ToCurrency string `json:"to_currency"`
+	Commission string `json:"commission"`
+	Rate       string `json:"rate"`
+	Amount     string `json:"amount"`
 }
 
-type CryptomusSignWebhookRequestData struct {
-	Signature string `json:"sign"`
+type CryptomusWebhookRequestData struct {
+	Type              string         `json:"type"`
+	Uuid              string         `json:"uuid"`
+	OrderID           string         `json:"order_id"`
+	Amount            string         `json:"amount"`
+	PaymentAmount     string         `json:"payment_amount"`
+	PaymentAmountUSD  string         `json:"payment_amount_usd"`
+	MerchantAmount    string         `json:"merchant_amount"`
+	Commission        string         `json:"commission"`
+	IsFinal           bool           `json:"is_final"`
+	Status            string         `json:"status"`
+	From              string         `json:"from"`
+	WalletAddressUUID string         `json:"wallet_address_uuid"`
+	Network           string         `json:"network"`
+	Currency          string         `json:"currency"`
+	PayerCurrency     string         `json:"payer_currency"`
+	AdditionalData    string         `json:"additional_data"`
+	Convert           WebhookConvert `json:"convert"`
+	Txid              string         `json:"txid"`
+	Signature         string         `json:"sign"`
 }
 
 func md5hash(data []byte) string {
@@ -456,9 +455,8 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 }
-
 func (r CryptomusWebhookRequestData) String() string {
-	return fmt.Sprintf("{type %s uuid %s order_id %s amount %s payment_amount %s payment_amount_usd %s merchant_amount %s commission %s is_final %v status %s from %s wallet_address_uuid %s network %s currency %s payer_currency %s additional_data %s convert %v txid %s}",
+	return fmt.Sprintf("{type %s uuid %s order_id %s amount %s payment_amount %s payment_amount_usd %s merchant_amount %s commission %s is_final %v status %s from %s wallet_address_uuid %s network %s currency %s payer_currency %s additional_data %s convert {to_currency %s commission %s rate %s amount %s} txid %s signature %s}",
 		r.Type,
 		r.Uuid,
 		r.OrderID,
@@ -475,11 +473,14 @@ func (r CryptomusWebhookRequestData) String() string {
 		r.Currency,
 		r.PayerCurrency,
 		r.AdditionalData,
-		r.Convert,
+		r.Convert.ToCurrency,
+		r.Convert.Commission,
+		r.Convert.Rate,
+		r.Convert.Amount,
 		r.Txid,
+		r.Signature,
 	)
 }
-
 func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	var respdata CryptomusWebhookRequestData
 	body, err := io.ReadAll(r.Body)
@@ -498,21 +499,26 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect IP", http.StatusBadRequest)
 		return
 	}
-	var received_sign CryptomusSignWebhookRequestData
-	if err := json.Unmarshal(body, &received_sign); err != nil {
-		http.Error(w, "Cryptomus error", http.StatusBadRequest)
-		return
-	}
-	fmt.Println(received_sign)
 	json_data, err := json.Marshal(respdata)
 	if err != nil {
 		http.Error(w, "Error marshaling JSON:", http.StatusBadRequest)
 		return
 	}
-	escapedJsonData := strings.ReplaceAll(string(json_data), "/", "\\/")
-	sign := md5hash([]byte(escapedJsonData))
+	var jsonBody map[string]any
+	err = json.Unmarshal(json_data, &jsonBody)
+	if err != nil {
+		http.Error(w, "Error unmarshaling JSON:", http.StatusBadRequest)
+		return
+	}
+	reqSign, ok := jsonBody["sign"].(string)
+	if !ok {
+		http.Error(w, "Incorrect sign", http.StatusBadRequest)
+		return
+	}
+	delete(jsonBody, "sign")
+	sign := md5hash(json_data)
 	fmt.Println(sign)
-	if sign != received_sign.Signature {
+	if sign != reqSign {
 		http.Error(w, "Invalid hash, signatures do not match!", http.StatusBadRequest)
 		return
 	}
