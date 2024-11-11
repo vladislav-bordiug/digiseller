@@ -123,6 +123,7 @@ func main() {
 	CreateTableQuery(connPool)
 	defer connPool.Close()
 	http.HandleFunc("/payment/", payment)
+	http.HandleFunc("/status/", status)
 	http.HandleFunc("/webhookwata/", webhookwata)
 	http.HandleFunc("/webhookcryptomus/", webhookcryptomus)
 	log.Fatal(http.ListenAndServe("0.0.0.0"+":"+os.Getenv("PORT"), nil))
@@ -223,6 +224,7 @@ func sha256hmac(data []byte) []byte {
 }
 
 func payment(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
 	var err error
 	err = r.ParseForm()
 	if err != nil {
@@ -498,7 +500,7 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	signature := sha256hmac(hash)
 	apiUrl := "https://digiseller.market/callback/api"
 	urlStr := fmt.Sprintf("%s?invoice_id=%s&amount=%.2f&currency=%s&status=%s&signature=%s",
-		apiUrl, respdata.OrderID, amount-1, currency, status, strings.ToUpper(hex.EncodeToString(signature)))
+		apiUrl, respdata.OrderID, amount, currency, status, strings.ToUpper(hex.EncodeToString(signature)))
 	fmt.Println(urlStr)
 	req, err := http.NewRequest("GET", urlStr, nil)
 	if err != nil {
@@ -519,4 +521,8 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println(string(bodyy))
 	defer resp.Body.Close()
+}
+
+func status(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
 }
