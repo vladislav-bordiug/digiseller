@@ -455,32 +455,7 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 }
-func (r CryptomusWebhookRequestData) String() string {
-	return fmt.Sprintf("{type %s uuid %s order_id %s amount %s payment_amount %s payment_amount_usd %s merchant_amount %s commission %s is_final %v status %s from %s wallet_address_uuid %s network %s currency %s payer_currency %s additional_data %s convert {to_currency %s commission %s rate %s amount %s} txid %s signature %s}",
-		r.Type,
-		r.Uuid,
-		r.OrderID,
-		r.Amount,
-		r.PaymentAmount,
-		r.PaymentAmountUSD,
-		r.MerchantAmount,
-		r.Commission,
-		r.IsFinal,
-		r.Status,
-		r.From,
-		r.WalletAddressUUID,
-		r.Network,
-		r.Currency,
-		r.PayerCurrency,
-		r.AdditionalData,
-		r.Convert.ToCurrency,
-		r.Convert.Commission,
-		r.Convert.Rate,
-		r.Convert.Amount,
-		r.Txid,
-		r.Signature,
-	)
-}
+
 func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	var respdata CryptomusWebhookRequestData
 	body, err := io.ReadAll(r.Body)
@@ -493,7 +468,6 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
 		return
 	}
-	fmt.Println(respdata.String())
 	IPAddress := r.Header.Get("X-Forwarded-For")
 	if IPAddress != "91.227.144.54" {
 		http.Error(w, "Incorrect IP", http.StatusBadRequest)
