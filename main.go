@@ -225,6 +225,7 @@ func sha256hmac(data []byte) []byte {
 
 func payment(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
+	return
 	var err error
 	err = r.ParseForm()
 	if err != nil {
