@@ -479,6 +479,7 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	bytedata, err := io.ReadAll(r.Body)
 	reqBodyString := string(bytedata)
 	fmt.Println(reqBodyString)
+	fmt.Println(bytedata)
 	return
 	var respdata CryptomusWebhookRequestData
 	body, err := io.ReadAll(r.Body)
