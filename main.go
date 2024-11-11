@@ -476,33 +476,24 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 }
 
 func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
-	bytedata, err := io.ReadAll(r.Body)
-	var result map[string]interface{}
-
-	// Распаковываем JSON в map
-	err = json.Unmarshal(bytedata, &result)
-	if err != nil {
-		fmt.Println("Ошибка при парсинге JSON:", err)
-		return
-	}
-
-	// Выводим весь распарсенный JSON
-	fmt.Println(result)
-
-	// Можем работать с полями динамически
-	for key, value := range result {
-		fmt.Printf("Key: %s, Value: %v\n", key, value)
-	}
-	fmt.Println(bytedata)
-	return
-	var respdata CryptomusWebhookRequestData
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
 		return
 	}
-	originalJSON := string(body)
-	fmt.Println(originalJSON)
+	var result map[string]interface{}
+
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		fmt.Println("Ошибка при парсинге JSON:", err)
+		return
+	}
+
+	for key, value := range result {
+		fmt.Printf("Key: %s, Value: %v\n", key, value)
+	}
+	var respdata CryptomusWebhookRequestData
+
 	if err := json.Unmarshal(body, &respdata); err != nil {
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
 		return
