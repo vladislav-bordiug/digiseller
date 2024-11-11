@@ -481,7 +481,13 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	str := strconv.Quote(string(body))
-	log.Println(str)
+	for i := 0; i < len(str); i += 100 {
+		end := i + 100
+		if end > len(str) {
+			end = len(str)
+		}
+		fmt.Println(str[i:end])
+	}
 	var respdata CryptomusWebhookRequestData
 	if err := json.Unmarshal(body, &respdata); err != nil {
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
