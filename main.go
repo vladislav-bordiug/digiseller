@@ -133,12 +133,12 @@ type WataRequestData struct {
 }
 
 type WataWebhookRequestData struct {
-	Transid string `json:"order_uuid"`
-	Amount  int    `json:"amount"`
-	Status  string `json:"status"`
-	Orderid string `json:"order_id"`
-	Date    string `json:"paid_date_msk"`
-	Hash    string `json:"hash"`
+	Transid string  `json:"order_uuid"`
+	Amount  float32 `json:"amount"`
+	Status  string  `json:"status"`
+	Orderid string  `json:"order_id"`
+	Date    string  `json:"paid_date_msk"`
+	Hash    string  `json:"hash"`
 }
 
 type WataPaymentRequest struct {
@@ -407,6 +407,7 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.Unmarshal(body, &respdata); err != nil {
 		fmt.Println(2)
+		fmt.Println(err)
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
 		return
 	}
