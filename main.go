@@ -10,7 +10,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"io"
 	"log"
@@ -23,8 +22,8 @@ import (
 )
 
 func Config() *pgxpool.Config {
-	const defaultMaxConns = int32(4)
-	const defaultMinConns = int32(0)
+	// const defaultMaxConns = int32(4)
+	// const defaultMinConns = int32(0)
 	const defaultMaxConnLifetime = time.Hour
 	const defaultMaxConnIdleTime = time.Minute * 30
 	const defaultHealthCheckPeriod = time.Minute
@@ -35,26 +34,28 @@ func Config() *pgxpool.Config {
 		log.Fatal("Failed to create a config, error: ", err)
 	}
 
-	dbConfig.MaxConns = defaultMaxConns
-	dbConfig.MinConns = defaultMinConns
+	// dbConfig.MaxConns = defaultMaxConns
+	// dbConfig.MinConns = defaultMinConns
 	dbConfig.MaxConnLifetime = defaultMaxConnLifetime
 	dbConfig.MaxConnIdleTime = defaultMaxConnIdleTime
 	dbConfig.HealthCheckPeriod = defaultHealthCheckPeriod
 	dbConfig.ConnConfig.ConnectTimeout = defaultConnectTimeout
 
-	dbConfig.BeforeAcquire = func(ctx context.Context, c *pgx.Conn) bool {
-		log.Println("Before acquiring the connection pool to the database!!")
-		return true
-	}
+	/*
+		dbConfig.BeforeAcquire = func(ctx context.Context, c *pgx.Conn) bool {
+			log.Println("Before acquiring the connection pool to the database!!")
+			return true
+		}
 
-	dbConfig.AfterRelease = func(c *pgx.Conn) bool {
-		log.Println("After releasing the connection pool to the database!!")
-		return true
-	}
+		dbConfig.AfterRelease = func(c *pgx.Conn) bool {
+			log.Println("After releasing the connection pool to the database!!")
+			return true
+		}
 
-	dbConfig.BeforeClose = func(c *pgx.Conn) {
-		log.Println("Closed the connection pool to the database!!")
-	}
+		dbConfig.BeforeClose = func(c *pgx.Conn) {
+			log.Println("Closed the connection pool to the database!!")
+		}
+	*/
 
 	return dbConfig
 }
@@ -407,21 +408,17 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
 		return
 	}
-	fmt.Println("All")
 	if err := json.Unmarshal(body, &respdata); err != nil {
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
 		return
 	}
-	fmt.Println(respdata)
 	IPAddress := r.Header.Get("X-Forwarded-For")
-	fmt.Println(IPAddress)
 	if IPAddress != "62.76.102.182" {
 		http.Error(w, "Incorrect IP", http.StatusBadRequest)
 		return
 	}
 	hash := []byte(fmt.Sprintf("%s%s", respdata.Transid, os.Getenv("wata_sbp_token")))
 	signature := makesha256(hash)
-	fmt.Println(respdata.Hash, signature)
 	if respdata.Hash != signature {
 		http.Error(w, "Incorrect signature", http.StatusBadRequest)
 		return
