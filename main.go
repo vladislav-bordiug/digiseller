@@ -404,7 +404,6 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 	var respdata WataWebhookRequestData
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		fmt.Println("Error reading body")
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
 		return
 	}
