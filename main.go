@@ -236,6 +236,13 @@ func sha256hmac(data []byte) []byte {
 	return signature
 }
 
+func makesha256(data []byte) string {
+	h := sha256.New()
+	h.Write(data)
+	signature := hex.EncodeToString(h.Sum(nil))
+	return signature
+}
+
 func payment(w http.ResponseWriter, r *http.Request) {
 	var err error
 	err = r.ParseForm()
@@ -413,13 +420,12 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	hash := []byte(fmt.Sprintf("%s%s", respdata.Transid, os.Getenv("wata_sbp_token")))
-	signature := sha256hmac(hash)
-	fmt.Println(respdata.Hash, hex.EncodeToString(signature))
-	if !hmac.Equal([]byte(respdata.Hash), signature) {
+	signature := makesha256(hash)
+	fmt.Println(respdata.Hash, signature)
+	if respdata.Hash != signature {
 		http.Error(w, "Incorrect signature", http.StatusBadRequest)
 		return
 	}
-	client := &http.Client{}
 	status := ""
 	if respdata.Status == "Paid" {
 		status = "paid"
@@ -438,25 +444,7 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect id", http.StatusBadRequest)
 		return
 	}
-	UpdateStatusQuery(connPool, invoice_id, status)
-	amount, currency := SelectWebhookQuery(connPool, invoice_id)
-	hash = []byte(fmt.Sprintf("amount:%.2f;currency:%s;invoice_id:%d;status:%s;", amount, currency, invoice_id, status))
-	signature = sha256hmac(hash)
-	apiUrl := "https://digiseller.market/callback/api"
-	urlStr := fmt.Sprintf("%s?invoice_id=%s&amount=%.2f&currency=%s&status=%s&signature=%s",
-		apiUrl, respdata.Orderid, amount, currency, status, strings.ToUpper(hex.EncodeToString(signature)))
-	req, err := http.NewRequest("GET", urlStr, nil)
-	if err != nil {
-		http.Error(w, "Digiseller error", http.StatusBadRequest)
-		return
-	}
-	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	resp, err := client.Do(req)
-	if err != nil {
-		http.Error(w, "Digiseller error", http.StatusBadRequest)
-		return
-	}
-	defer resp.Body.Close()
+	updatedigiseller(w, invoice_id, status)
 }
 
 func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
@@ -492,7 +480,6 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect IP", http.StatusBadRequest)
 		return
 	}
-	client := &http.Client{}
 	status := ""
 	if respdata.Status == "paid" || respdata.Status == "paid_over" {
 		status = "paid"
@@ -511,13 +498,18 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Incorrect id", http.StatusBadRequest)
 		return
 	}
+	updatedigiseller(w, invoice_id, status)
+}
+
+func updatedigiseller(w http.ResponseWriter, invoice_id int64, status string) {
+	client := &http.Client{}
 	UpdateStatusQuery(connPool, invoice_id, status)
 	amount, currency := SelectWebhookQuery(connPool, invoice_id)
 	hash := []byte(fmt.Sprintf("amount:%.2f;currency:%s;invoice_id:%d;status:%s;", amount, currency, invoice_id, status))
 	signature := sha256hmac(hash)
 	apiUrl := "https://digiseller.market/callback/api"
-	urlStr := fmt.Sprintf("%s?invoice_id=%s&amount=%.2f&currency=%s&status=%s&signature=%s",
-		apiUrl, respdata.OrderID, amount, currency, status, strings.ToUpper(hex.EncodeToString(signature)))
+	urlStr := fmt.Sprintf("%s?invoice_id=%d&amount=%.2f&currency=%s&status=%s&signature=%s",
+		apiUrl, invoice_id, amount, currency, status, strings.ToUpper(hex.EncodeToString(signature)))
 	req, err := http.NewRequest("GET", urlStr, nil)
 	if err != nil {
 		http.Error(w, "Digiseller error", http.StatusBadRequest)
