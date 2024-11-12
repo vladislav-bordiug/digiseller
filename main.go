@@ -401,20 +401,24 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 	var respdata WataWebhookRequestData
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
+		fmt.Println(1)
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
 		return
 	}
 	if err := json.Unmarshal(body, &respdata); err != nil {
+		fmt.Println(2)
 		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
 		return
 	}
 	IPAddress := r.Header.Get("X-Forwarded-For")
+	fmt.Println(IPAddress)
 	if IPAddress != "62.76.102.182" {
 		http.Error(w, "Incorrect IP", http.StatusBadRequest)
 		return
 	}
 	hash := []byte(fmt.Sprintf("%s%s", respdata.Transid, os.Getenv("wata_sbp_token")))
 	signature := makesha256(hash)
+	fmt.Println(signature, respdata.Hash)
 	if respdata.Hash != signature {
 		http.Error(w, "Incorrect signature", http.StatusBadRequest)
 		return
