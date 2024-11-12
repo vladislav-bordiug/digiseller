@@ -100,12 +100,9 @@ func SelectStatusQuery(p *pgxpool.Pool, invoice_id int64) string {
 	return status
 }
 
-var commissions map[string]float64
 var connPool *pgxpool.Pool
 
 func main() {
-	commissions = make(map[string]float64)
-	commissions["20122"] = 11.00
 	var err error
 	connPool, err = pgxpool.NewWithConfig(context.Background(), Config())
 	if err != nil {
