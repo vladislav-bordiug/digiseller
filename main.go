@@ -109,16 +109,16 @@ func main() {
 	var err error
 	connPool, err = pgxpool.NewWithConfig(context.Background(), Config())
 	if err != nil {
-		log.Fatal("Error while creating connection to the database!!")
+		log.Fatal("Error while creating connection to the database!!", err)
 	}
 	connection, err := connPool.Acquire(context.Background())
 	if err != nil {
-		log.Fatal("Error while acquiring connection from the database pool!!")
+		log.Fatal("Error while acquiring connection from the database pool!!", err)
 	}
 	defer connection.Release()
 	err = connection.Ping(context.Background())
 	if err != nil {
-		log.Fatal("Could not ping database")
+		log.Fatal("Could not ping database", err)
 	}
 	err = CreateTableQuery(connPool)
 	if err != nil {
@@ -251,24 +251,24 @@ func payment(w http.ResponseWriter, r *http.Request) {
 	var err error
 	err = r.ParseForm()
 	if err != nil {
-		http.Error(w, "Incorrect data", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	invoice_id, err := strconv.ParseInt(r.Form["invoice_id"][0], 10, 64)
 	if err != nil {
-		http.Error(w, "Incorrect id", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	amount, err := strconv.ParseFloat(r.Form["amount"][0], 32)
 	if err != nil {
-		http.Error(w, "Incorrect amount", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	payment_id := r.Form["payment_id"][0]
 	returnurl := r.Form["return_url"][0]
 	return_url, err := url.QueryUnescape(returnurl)
 	if err != nil {
-		http.Error(w, "Error in encoding returning url:", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	description := r.Form["description"][0]
@@ -290,30 +290,30 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		}
 		data, err := json.Marshal(paymentData)
 		if err != nil {
-			http.Error(w, "Error marshaling JSON:", http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		req, err := http.NewRequest("POST", urlwata, bytes.NewBuffer(data))
 		if err != nil {
-			http.Error(w, "Wata error", http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		req.Header.Add("Authorization", "Bearer "+os.Getenv("wata_sbp_token"))
 		req.Header.Add("Content-Type", "application/json")
 		resp, err := client.Do(req)
 		if err != nil {
-			http.Error(w, "Wata error", http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		defer resp.Body.Close()
 		var respdata WataRequestData
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			http.Error(w, "Wata error", http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		if err := json.Unmarshal(body, &respdata); err != nil {
-			http.Error(w, "Wata error", http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		if len(respdata.Url) == 0 {
@@ -366,12 +366,12 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		}
 		data, err := json.Marshal(paymentData)
 		if err != nil {
-			http.Error(w, "Error marshaling JSON:", http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		req, err := http.NewRequest("POST", urlcrypto, bytes.NewBuffer(data))
 		if err != nil {
-			http.Error(w, "Cryptomus error", http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		sign := md5hash(data)
@@ -380,24 +380,24 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		req.Header.Add("Content-Type", "application/json")
 		resp, err := client.Do(req)
 		if err != nil {
-			http.Error(w, "Cryptomus error", http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		defer resp.Body.Close()
 		body, err := io.ReadAll(resp.Body)
 		if err != nil {
-			http.Error(w, "Cryptomus error", http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		var respdata CryptomusRequestData
 		if err := json.Unmarshal(body, &respdata); err != nil {
-			http.Error(w, "Cryptomus error", http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 		if len(respdata.Result.Url) == 0 {
 			var respdata CryptomusError
 			if err := json.Unmarshal(body, &respdata); err != nil {
-				http.Error(w, "Cryptomus error", http.StatusBadRequest)
+				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
 			http.Error(w, respdata.Message, http.StatusBadRequest)
@@ -411,11 +411,11 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 	var respdata WataWebhookRequestData
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if err := json.Unmarshal(body, &respdata); err != nil {
-		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	IPAddress := r.Header.Get("X-Forwarded-For")
@@ -444,7 +444,7 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 	}
 	invoice_id, err := strconv.ParseInt(respdata.Orderid, 10, 64)
 	if err != nil {
-		http.Error(w, "Incorrect id", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	updatedigiseller(w, invoice_id, status)
@@ -453,23 +453,23 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	//str := strconv.Quote(string(body))
 	var respdata CryptomusWebhookRequestData
 	if err := json.Unmarshal(body, &respdata); err != nil {
-		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	var signrespdata CryptomusWebhookRequestSignature
 	if err := json.Unmarshal(body, &signrespdata); err != nil {
-		http.Error(w, "Incorrect webhook", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	data, err := json.Marshal(respdata)
 	if err != nil {
-		http.Error(w, "Error marshaling JSON:", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	data = []byte(strings.Replace(string(data), `/`, `\/`, -1))
@@ -498,7 +498,7 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	}
 	invoice_id, err := strconv.ParseInt(respdata.OrderID, 10, 64)
 	if err != nil {
-		http.Error(w, "Incorrect id", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	updatedigiseller(w, invoice_id, status)
@@ -523,13 +523,13 @@ func updatedigiseller(w http.ResponseWriter, invoice_id int64, status string) {
 		apiUrl, invoice_id, amount, currency, status, strings.ToUpper(hex.EncodeToString(signature)))
 	req, err := http.NewRequest("GET", urlStr, nil)
 	if err != nil {
-		http.Error(w, "Digiseller error", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := client.Do(req)
 	if err != nil {
-		http.Error(w, "Digiseller error", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer resp.Body.Close()
@@ -547,7 +547,7 @@ func status(w http.ResponseWriter, r *http.Request) {
 	}
 	invoice_id, err := strconv.ParseInt(reqdata.Transid, 10, 64)
 	if err != nil {
-		http.Error(w, "Incorrect id", http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	status := SelectStatusQuery(connPool, invoice_id)
