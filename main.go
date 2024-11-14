@@ -60,42 +60,45 @@ func Config() *pgxpool.Config {
 	return dbConfig
 }
 
-func CreateTableQuery(p *pgxpool.Pool) {
+func CreateTableQuery(p *pgxpool.Pool) error {
 	_, err := p.Exec(context.Background(), "CREATE TABLE IF NOT EXISTS orders (invoice_id BIGINT PRIMARY KEY,amount NUMERIC(10, 2) NOT NULL,currency VARCHAR(3) NOT NULL, status VARCHAR(10) NOT NULL);")
 	if err != nil {
-		log.Fatal("Error while creating the table")
+		return err
 	}
+	return nil
 }
 
-func InsertQuery(p *pgxpool.Pool, invoice_id int64, amount float32, currency string, status string) {
+func InsertQuery(p *pgxpool.Pool, invoice_id int64, amount float32, currency string, status string) error {
 	_, err := p.Exec(context.Background(), "INSERT INTO orders(invoice_id, amount, currency, status) values($1, $2, $3, $4)", invoice_id, amount, currency, status)
 	if err != nil {
-		log.Fatal("Error while inserting value into the table")
+		return err
 	}
+	return nil
 }
 
-func UpdateStatusQuery(p *pgxpool.Pool, invoice_id int64, status string) {
+func UpdateStatusQuery(p *pgxpool.Pool, invoice_id int64, status string) error {
 	_, err := p.Exec(context.Background(), "UPDATE orders SET status = $2 WHERE invoice_id = $1", invoice_id, status)
 	if err != nil {
-		log.Fatal("Error while inserting value into the table")
+		return err
 	}
+	return nil
 }
 
-func SelectWebhookQuery(p *pgxpool.Pool, invoice_id int64) (float32, string) {
+func SelectWebhookQuery(p *pgxpool.Pool, invoice_id int64) (float32, string, error) {
 	var amount float32
 	var currency string
 	err := p.QueryRow(context.Background(), "select amount, currency from orders where invoice_id=$1", invoice_id).Scan(&amount, &currency)
 	if err != nil {
-		log.Fatal("Error while selecting value from the table")
+		return 0.0, "RUB", err
 	}
-	return amount, currency
+	return amount, currency, nil
 }
 
 func SelectStatusQuery(p *pgxpool.Pool, invoice_id int64) string {
 	var status string
 	err := p.QueryRow(context.Background(), "select status from orders where invoice_id=$1", invoice_id).Scan(&status)
 	if err != nil {
-		log.Fatal("Error while selecting value from the table")
+		return "wait"
 	}
 	return status
 }
@@ -117,7 +120,10 @@ func main() {
 	if err != nil {
 		log.Fatal("Could not ping database")
 	}
-	CreateTableQuery(connPool)
+	err = CreateTableQuery(connPool)
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer connPool.Close()
 	http.HandleFunc("/payment/", payment)
 	http.HandleFunc("/status/", status)
@@ -267,7 +273,11 @@ func payment(w http.ResponseWriter, r *http.Request) {
 	}
 	description := r.Form["description"][0]
 	currency := r.Form["currency"][0]
-	InsertQuery(connPool, invoice_id, float32(amount), currency, "wait")
+	err = InsertQuery(connPool, invoice_id, float32(amount), currency, "wait")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	client := &http.Client{}
 	if payment_id == "20122" {
 		urlwata := "https://acquiring.foreignpay.ru/webhook/partner_sbp/transaction"
@@ -496,8 +506,16 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 
 func updatedigiseller(w http.ResponseWriter, invoice_id int64, status string) {
 	client := &http.Client{}
-	UpdateStatusQuery(connPool, invoice_id, status)
-	amount, currency := SelectWebhookQuery(connPool, invoice_id)
+	err := UpdateStatusQuery(connPool, invoice_id, status)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	amount, currency, err := SelectWebhookQuery(connPool, invoice_id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	hash := []byte(fmt.Sprintf("amount:%.2f;currency:%s;invoice_id:%d;status:%s;", amount, currency, invoice_id, status))
 	signature := sha256hmac(hash)
 	apiUrl := "https://digiseller.market/callback/api"
