@@ -555,7 +555,6 @@ func status(w http.ResponseWriter, r *http.Request) {
 	}
 	hash := []byte(fmt.Sprintf("amount:%s;currency:%s;invoice_id:%s;seller_id:%s;", reqdata.Amount, reqdata.Currency, reqdata.Transid, reqdata.Sellerid))
 	signature := sha256hmac(hash)
-	fmt.Println(reqdata.Signature, strings.ToUpper(hex.EncodeToString(signature)))
 	if strings.ToUpper(hex.EncodeToString(signature)) != reqdata.Signature {
 		http.Error(w, "Incorrect signature", http.StatusBadRequest)
 		return
