@@ -216,8 +216,8 @@ type CryptomusWebhookRequestData struct {
 	PayerAmount             *string                         `json:"payer_amount"`
 	PayerAmountExchangeRate *string                         `json:"payer_amount_exchange_rate"`
 	AdditionalData          *string                         `json:"additional_data"`
-	Convert                 *CryptomusWebhookRequestConvert `json:"convert,omitempty"`
 	TransferID              *string                         `json:"transfer_id"`
+	Convert                 *CryptomusWebhookRequestConvert `json:"convert,omitempty"`
 	Txid                    string                          `json:"txid,omitempty"`
 }
 
