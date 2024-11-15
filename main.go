@@ -553,6 +553,13 @@ func status(w http.ResponseWriter, r *http.Request) {
 		Currency:  query.Get("currency"),
 		Signature: query.Get("signature"),
 	}
+	hash := []byte(fmt.Sprintf("amount:%s;currency:%s;invoice_id:%s;seller_id:%s;", reqdata.Amount, reqdata.Currency, reqdata.Transid, reqdata.Sellerid))
+	signature := sha256hmac(hash)
+	fmt.Println(reqdata.Signature, strings.ToUpper(hex.EncodeToString(signature)))
+	if strings.ToUpper(hex.EncodeToString(signature)) != reqdata.Signature {
+		http.Error(w, "Incorrect signature", http.StatusBadRequest)
+		return
+	}
 	invoice_id, err := strconv.ParseInt(reqdata.Transid, 10, 64)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -560,8 +567,8 @@ func status(w http.ResponseWriter, r *http.Request) {
 	}
 	status := SelectStatusQuery(connPool, invoice_id)
 	var answerData DigisellerStatusAnswer
-	hash := []byte(fmt.Sprintf("amount:%s;currency:%s;invoice_id:%s;status:%s;", reqdata.Amount, reqdata.Currency, reqdata.Transid, status))
-	signature := sha256hmac(hash)
+	hash = []byte(fmt.Sprintf("amount:%s;currency:%s;invoice_id:%s;status:%s;", reqdata.Amount, reqdata.Currency, reqdata.Transid, status))
+	signature = sha256hmac(hash)
 	answerData = DigisellerStatusAnswer{
 		Transid:   reqdata.Transid,
 		Amount:    reqdata.Amount,
@@ -570,5 +577,9 @@ func status(w http.ResponseWriter, r *http.Request) {
 		Signature: strings.ToUpper(hex.EncodeToString(signature)),
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(answerData)
+	err = json.NewEncoder(w).Encode(answerData)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 }
