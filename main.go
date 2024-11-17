@@ -417,7 +417,6 @@ func payment(w http.ResponseWriter, r *http.Request) {
 
 func webhookwata(w http.ResponseWriter, r *http.Request) {
 	IPAddress := r.Header.Get("X-Forwarded-For")
-	fmt.Println(IPAddress)
 	if IPAddress != "62.76.102.182" {
 		http.Error(w, "Incorrect IP", http.StatusBadRequest)
 		return
@@ -433,7 +432,6 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	signature := makesha256(respdata.Transid)
-	fmt.Print(signature, respdata.Hash)
 	if respdata.Hash != signature {
 		http.Error(w, "Incorrect signature", http.StatusBadRequest)
 		return
