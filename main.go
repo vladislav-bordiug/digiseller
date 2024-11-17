@@ -250,7 +250,7 @@ func sha256hmac(data []byte) string {
 
 func makesha256(data string) string {
 	h := sha256.New()
-	h.Write([]byte(data + os.Getenv("wata_sbp_token")))
+	h.Write([]byte(fmt.Sprintf("%s%s", data, os.Getenv("wata_sbp_token"))))
 	signature := hex.EncodeToString(h.Sum(nil))
 	return signature
 }
@@ -417,6 +417,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 
 func webhookwata(w http.ResponseWriter, r *http.Request) {
 	IPAddress := r.Header.Get("X-Forwarded-For")
+	fmt.Println(IPAddress)
 	if IPAddress != "62.76.102.182" {
 		http.Error(w, "Incorrect IP", http.StatusBadRequest)
 		return
