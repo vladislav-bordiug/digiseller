@@ -241,11 +241,11 @@ func md5hash(data []byte) string {
 	return sign
 }
 
-func sha256hmac(data []byte) []byte {
+func sha256hmac(data []byte) string {
 	mac := hmac.New(sha256.New, []byte(os.Getenv("HASH_KEY")))
 	mac.Write(data)
 	signature := mac.Sum(nil)
-	return signature
+	return strings.ToUpper(hex.EncodeToString(signature))
 }
 
 func makesha256(data []byte) string {
@@ -528,7 +528,7 @@ func updatedigiseller(w http.ResponseWriter, invoice_id int64, status string) {
 	signature := sha256hmac(hash)
 	apiUrl := "https://digiseller.market/callback/api"
 	urlStr := fmt.Sprintf("%s?invoice_id=%d&amount=%.2f&currency=%s&status=%s&signature=%s",
-		apiUrl, invoice_id, amount, currency, status, strings.ToUpper(hex.EncodeToString(signature)))
+		apiUrl, invoice_id, amount, currency, status, signature)
 	req, err := http.NewRequest("GET", urlStr, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -555,7 +555,7 @@ func status(w http.ResponseWriter, r *http.Request) {
 	}
 	hash := []byte(fmt.Sprintf("amount:%s;currency:%s;invoice_id:%s;seller_id:%s;", reqdata.Amount, reqdata.Currency, reqdata.Transid, reqdata.Sellerid))
 	signature := sha256hmac(hash)
-	if strings.ToUpper(hex.EncodeToString(signature)) != reqdata.Signature {
+	if signature != reqdata.Signature {
 		http.Error(w, "Incorrect signature", http.StatusBadRequest)
 		return
 	}
@@ -573,7 +573,7 @@ func status(w http.ResponseWriter, r *http.Request) {
 		Amount:    reqdata.Amount,
 		Currency:  reqdata.Currency,
 		Status:    status,
-		Signature: strings.ToUpper(hex.EncodeToString(signature)),
+		Signature: signature,
 	}
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(answerData)
