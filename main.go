@@ -244,8 +244,8 @@ func md5hash(data []byte) string {
 func sha256hmac(data []byte) string {
 	mac := hmac.New(sha256.New, []byte(os.Getenv("HASH_KEY")))
 	mac.Write(data)
-	signature := mac.Sum(nil)
-	return strings.ToUpper(hex.EncodeToString(signature))
+	signature := strings.ToUpper(hex.EncodeToString(mac.Sum(nil)))
+	return signature
 }
 
 func makesha256(data []byte) string {
