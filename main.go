@@ -433,6 +433,7 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	signature := makesha256(respdata.Transid)
+	fmt.Print(signature, respdata.Hash)
 	if respdata.Hash != signature {
 		http.Error(w, "Incorrect signature", http.StatusBadRequest)
 		return
