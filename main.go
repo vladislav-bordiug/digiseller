@@ -416,6 +416,11 @@ func payment(w http.ResponseWriter, r *http.Request) {
 }
 
 func webhookwata(w http.ResponseWriter, r *http.Request) {
+	IPAddress := r.Header.Get("X-Forwarded-For")
+	if IPAddress != "62.76.102.182" {
+		http.Error(w, "Incorrect IP", http.StatusBadRequest)
+		return
+	}
 	var respdata WataWebhookRequestData
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -424,11 +429,6 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.Unmarshal(body, &respdata); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	IPAddress := r.Header.Get("X-Forwarded-For")
-	if IPAddress != "62.76.102.182" {
-		http.Error(w, "Incorrect IP", http.StatusBadRequest)
 		return
 	}
 	hash := []byte(fmt.Sprintf("%s%s", respdata.Transid, os.Getenv("wata_sbp_token")))
@@ -459,6 +459,11 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 }
 
 func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
+	IPAddress := r.Header.Get("X-Forwarded-For")
+	if IPAddress != "91.227.144.54" {
+		http.Error(w, "Incorrect IP", http.StatusBadRequest)
+		return
+	}
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -484,11 +489,6 @@ func webhookcryptomus(w http.ResponseWriter, r *http.Request) {
 	sign := md5hash(data)
 	if sign != signrespdata.Signature {
 		http.Error(w, "Incorrect signature", http.StatusBadRequest)
-		return
-	}
-	IPAddress := r.Header.Get("X-Forwarded-For")
-	if IPAddress != "91.227.144.54" {
-		http.Error(w, "Incorrect IP", http.StatusBadRequest)
 		return
 	}
 	status := ""
