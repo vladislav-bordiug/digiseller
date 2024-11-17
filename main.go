@@ -248,9 +248,9 @@ func sha256hmac(data []byte) string {
 	return signature
 }
 
-func makesha256(data []byte) string {
+func makesha256(data string) string {
 	h := sha256.New()
-	h.Write(data)
+	h.Write([]byte(data + os.Getenv("wata_sbp_token")))
 	signature := hex.EncodeToString(h.Sum(nil))
 	return signature
 }
@@ -431,8 +431,7 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	hash := []byte(fmt.Sprintf("%s%s", respdata.Transid, os.Getenv("wata_sbp_token")))
-	signature := makesha256(hash)
+	signature := makesha256(respdata.Transid)
 	if respdata.Hash != signature {
 		http.Error(w, "Incorrect signature", http.StatusBadRequest)
 		return
