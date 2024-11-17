@@ -417,8 +417,10 @@ func payment(w http.ResponseWriter, r *http.Request) {
 
 func webhookwata(w http.ResponseWriter, r *http.Request) {
 	IPAddress := r.Header.Get("X-Forwarded-For")
-
-	fmt.Println(IPAddress)
+	if IPAddress != "62.76.102.182" && IPAddress != "31.200.248.202" {
+		http.Error(w, "Incorrect IP", http.StatusBadRequest)
+		return
+	}
 	var respdata WataWebhookRequestData
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -430,7 +432,6 @@ func webhookwata(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	signature := makesha256(respdata.Transid)
-	fmt.Println(signature, respdata.Hash)
 	if respdata.Hash != signature {
 		http.Error(w, "Incorrect signature", http.StatusBadRequest)
 		return
