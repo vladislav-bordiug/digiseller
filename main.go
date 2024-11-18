@@ -298,7 +298,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	amount = math.Ceil(amount*comission[payment_id]*100) / 100
+	amount = math.Ceil(amount*(1+comission[payment_id]/100)*100) / 100
 	client := &http.Client{}
 	if payment_id == "20122" {
 		urlwata := "https://acquiring.foreignpay.ru/webhook/partner_sbp/transaction"
