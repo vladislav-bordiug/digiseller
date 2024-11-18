@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"io"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
@@ -105,7 +106,18 @@ func SelectStatusQuery(p *pgxpool.Pool, invoice_id int64) string {
 
 var connPool *pgxpool.Pool
 
+var comission map[string]float64
+
 func main() {
+	comission = make(map[string]float64)
+	comission["20122"] = 17.0
+	comission["20064"] = 6.0
+	comission["20066"] = 6.0
+	comission["20067"] = 6.0
+	comission["20068"] = 6.0
+	comission["20069"] = 6.0
+	comission["20070"] = 6.0
+	comission["20133"] = 6.0
 	var err error
 	connPool, err = pgxpool.NewWithConfig(context.Background(), Config())
 	if err != nil {
@@ -286,6 +298,7 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	amount = math.Ceil(amount*comission[payment_id]*100) / 100
 	client := &http.Client{}
 	if payment_id == "20122" {
 		urlwata := "https://acquiring.foreignpay.ru/webhook/partner_sbp/transaction"
