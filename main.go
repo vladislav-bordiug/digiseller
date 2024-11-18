@@ -110,7 +110,7 @@ var comission map[string]float64
 
 func main() {
 	comission = make(map[string]float64)
-	comission["20122"] = 17.0
+	comission["20122"] = 16.3
 	comission["20064"] = 6.0
 	comission["20066"] = 6.0
 	comission["20067"] = 6.0
