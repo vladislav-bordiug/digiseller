@@ -293,6 +293,14 @@ func payment(w http.ResponseWriter, r *http.Request) {
 	}
 	description := r.Form["description"][0]
 	currency := r.Form["currency"][0]
+	received_signature := r.Form["signature"][0]
+	hash := []byte(fmt.Sprintf("amount:%.2f;currency:%s;invoice_id:%d;payment_id:%s;", amount, currency, invoice_id, payment_id))
+	signature := sha256hmac(hash)
+	fmt.Println(signature, received_signature)
+	if signature != received_signature {
+		http.Error(w, "Incorrect signature", http.StatusBadRequest)
+		return
+	}
 	err = InsertQuery(connPool, invoice_id, float32(amount), currency, "wait")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
