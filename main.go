@@ -304,6 +304,11 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	_, ok := comission[payment_id]
+	if !ok {
+		http.Error(w, "Incorrect payment method", http.StatusBadRequest)
+		return
+	}
 	amount = math.Round(amount*(1+comission[payment_id]/100)*100) / 100
 	client := &http.Client{}
 	if payment_id == "20122" {
@@ -369,9 +374,6 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		} else if payment_id == "20070" {
 			to_currency = "ETH"
 			network = "eth"
-		} else if payment_id != "20133" {
-			http.Error(w, "Incorrect payment method", http.StatusBadRequest)
-			return
 		}
 		urlcrypto := "https://api.cryptomus.com/v1/payment"
 		var paymentData CryptomusPaymentRequest
