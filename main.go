@@ -369,6 +369,9 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		} else if payment_id == "20070" {
 			to_currency = "ETH"
 			network = "eth"
+		} else if payment_id != "20133" {
+			http.Error(w, "Incorrect payment method", http.StatusBadRequest)
+			return
 		}
 		urlcrypto := "https://api.cryptomus.com/v1/payment"
 		var paymentData CryptomusPaymentRequest
