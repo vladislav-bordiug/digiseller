@@ -274,26 +274,25 @@ func payment(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	invoice_id, err := strconv.ParseInt(r.Form["invoice_id"][0], 10, 64)
+	invoice_id, err := strconv.ParseInt(r.FormValue("invoice_id"), 10, 64)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	amount, err := strconv.ParseFloat(r.Form["amount"][0], 32)
+	amount, err := strconv.ParseFloat(r.FormValue("amount"), 32)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	payment_id := r.Form["payment_id"][0]
-	return_url, err := url.QueryUnescape(r.Form["return_url"][0])
+	payment_id := r.FormValue("payment_id")
+	return_url, err := url.QueryUnescape(r.FormValue("return_url"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	fmt.Println(return_url)
-	description := r.Form["description"][0]
-	currency := r.Form["currency"][0]
-	received_signature := r.Form["signature"][0]
+	description := r.FormValue("description")
+	currency := r.FormValue("currency")
+	received_signature := r.FormValue("signature")
 	hash := []byte(fmt.Sprintf("amount:%.2f;currency:%s;invoice_id:%d;payment_id:%s;", amount, currency, invoice_id, payment_id))
 	signature := sha256hmac(hash)
 	if signature != received_signature {
